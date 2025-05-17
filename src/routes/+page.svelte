@@ -171,10 +171,10 @@
 <svelte:body onclick={clickHandler} />
 
 <div class="w-full justify-center p-4">
-    <div class="w-full xl:w-1/2 m-auto flex-col">
+    <div class="w-full 2xl:w-1/2 m-auto flex-col">
         <div class="navbar pb-6">
             <div class="flex-1 pl-2 navbar-start">
-                <span class="text-xl xl:text-2xl">PluralKit Status</span>
+                <span class="text-xl">PluralKit Status</span>
             </div>
 
             <div class="navbar-end">
