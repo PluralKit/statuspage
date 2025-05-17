@@ -106,7 +106,7 @@
         return diff;
 	}
 
-    const getShardID = (guild_id: string) => guild_id == "" ? -1 : (parseInt(guild_id) >> 22 % shards_total);
+    const getShardID = (guild_id: string) => guild_id == "" ? -1 : Number((BigInt(guild_id) >> BigInt(22)) % BigInt(shards_total));
 
     let findClusterInput = "";
     let findClusterErr = "";
@@ -218,7 +218,7 @@
                     <span class="text-sm text-error">{findClusterErr}</span>
                 {/if}
                 {#if findClusterInput != "" && findClusterErr == "" && showCluster}
-                    <span class="text-sm text-info">You are on cluster {shownCluster.cluster_id}!</span>
+                    <span class="text-sm text-info">You are on cluster {shownCluster.cluster_id}, shard {shownShardID}!</span>
                 {/if}
                 <div class="divider"></div>
                 <span class="text-lg">Clusters:</span>
