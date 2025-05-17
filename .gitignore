@@ -1,3 +1,6 @@
+.svelte-kit
+build
+
 # Logs
 logs
 *.log
