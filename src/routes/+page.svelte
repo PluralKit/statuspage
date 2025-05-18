@@ -188,7 +188,7 @@
             <div class="flex-1 pl-2 navbar-start">
                 <div class="avatar pr-4">
                     <div class="w-12 rounded">
-                      <img alt="An icon of myriad" src="/myriad_write.png" />
+                      <img alt="An icon of myriad" src="myriad_write.png" />
                     </div>
                 </div>
                 <span class="text-2xl">PluralKit Status</span>
