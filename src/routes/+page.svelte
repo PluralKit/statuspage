@@ -184,14 +184,14 @@
 
 <div class="w-full justify-center p-4">
     <div class="w-full 2xl:w-1/2 m-auto flex-col">
-        <div class="navbar pb-6">
+        <div class="navbar pb-6" role="region" aria-label="Navigation menu">
             <div class="flex-1 pl-2 navbar-start">
                 <div class="avatar pr-4">
                     <div class="w-12 rounded">
-                      <img alt="An icon of myriad" src="myriad_write.png" />
+                      <img alt="An icon of myriad looking down and writing on a notepad" src="myriad_write.png" />
                     </div>
                 </div>
-                <span class="text-2xl">PluralKit Status</span>
+                <h1 class="text-2xl">PluralKit Status</h1>
             </div>
 
             <div class="navbar-end">
@@ -199,7 +199,7 @@
                     <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /> </svg>
                     </div>
-                    <ul tabindex="0" class="menu menu-md dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+                    <ul class="menu menu-md dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
                         <li><a href="https://discordstatus.com/">Discord Status</a></li>
                         <li><a href="https://stats.pluralkit.me">Statistics</a></li>
                         <li><a href="https://discord.gg/PczBt78">Support Server</a></li>
@@ -210,7 +210,7 @@
                     <li><a href="https://stats.pluralkit.me">Statistics</a></li>
                     <li><a href="https://discord.gg/PczBt78">Support Server</a></li>
                      <li>
-                        <label class="swap swap-rotate">
+                        <label class="swap swap-rotate" aria-label="Dark/Light Mode Toggle">
                             <input type="checkbox" class="theme-controller" data-toggle-theme="dark,light"/>
 
                             <svg class="swap-off h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z" /></svg>
@@ -223,7 +223,7 @@
         </div>
         <div class="card bg-base-200 shadow-sm">
             <div class="p-8 flex flex-col">
-                <div class="stats shadow">
+                <div class="stats shadow" role="region" aria-label="Overall statistics">
                     <div class="stat">
                       <div class="stat-title">Shards Up</div>
                       <div class="stat-value">{shards_up} / {shards_total}</div>
@@ -235,9 +235,9 @@
                 </div>
 
                 <div class="divider"></div>
-                <span class="text-lg">Clusters:</span>
 
-                <div class="w-full flex justify-center">
+                <div class="w-full flex flex-col" role="region" aria-label="Cluster status">
+                    <h2 class="text-lg">Clusters:</h2>
                     <div class="flex flex-wrap flex-row gap-2 py-6 justify-center">
                         {#each clusters as cluster}
                         <button class="cluster aspect-square tooltip indicator {cluster.status}" on:click={()=>{showClusterHandler(cluster.cluster_id)}}>
@@ -251,7 +251,7 @@
                 </div>
                 
                 {#if showCluster}
-                <div class="card bg-base-300 p-8" transition:slide="{{duration: 250}}">
+                <div class="card bg-base-300 p-8" transition:slide="{{duration: 250}}" role="region" aria-label="Current shown cluster" >
                     <span class="text-center">Cluster {shownCluster.cluster_id} Shards:</span>
                     <div class="flex flex-row flex-wrap gap-2 p-4 justify-center">
                         {#each shownCluster.shards as shard}
@@ -272,15 +272,17 @@
 
                 <div class="divider"></div>
                 
-                <span class="text-lg">Find My Shard/Cluster:</span>
-                <span class="text-sm pb-4">Enter a server ID or a message link to find the shard currently assigned to your server.</span>
-                <input type="text" placeholder="Server ID or Message Link" class="input {findClusterErr != "" ? "input-error" : ""}" bind:value={findClusterInput} on:input={clusterInfoHandler} />
-                {#if findClusterErr != ""}
-                    <span class="text-sm text-error">{findClusterErr}</span>
-                {/if}
-                {#if findClusterInput != "" && findClusterErr == "" && showCluster}
-                    <span class="text-md text-info pt-4">You are on cluster {shownCluster.cluster_id}, shard {shownShardID}!</span>
-                {/if}
+                <div role="region" aria-label="Cluster/Shard locator" class="flex flex-col">
+                    <h2 class="text-lg">Find My Shard/Cluster:</h2>
+                    <span class="text-sm pb-4">Enter a server ID or a message link to find the shard currently assigned to your server.</span>
+                    <input type="text" aria-label="Server ID or Message Link Input" placeholder="Server ID or Message Link" class="input {findClusterErr != "" ? "input-error" : ""}" bind:value={findClusterInput} on:input={clusterInfoHandler} />
+                    {#if findClusterErr != ""}
+                        <span class="text-sm text-error">{findClusterErr}</span>
+                    {/if}
+                    {#if findClusterInput != "" && findClusterErr == "" && showCluster}
+                        <span class="text-md text-info pt-4">You are on cluster {shownCluster.cluster_id}, shard {shownShardID}!</span>
+                    {/if}
+                </div>
             </div>
         </div>
     </div>
