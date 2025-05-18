@@ -113,12 +113,16 @@
     let shownCluster: Cluster;
     let shownShardID: number;
     let showCluster = false;
+    let findCluster = false;
 
     //TODO: clean this up hehe, better validation?
     function clusterInfoHandler() {
         if(findClusterInput == "") {
             showCluster = false;
+            findCluster = false;
             findClusterErr = "";
+            shownCluster = null as any;
+            shownShardID = -1;
             return;
         }
 
@@ -129,6 +133,7 @@
                 shownShardID = Number(shardID);
                 shownCluster = clusters[Math.floor(shownShardID / max_concurrency)];
                 showCluster = true;
+                findCluster = true;
                 findClusterErr = "";
                 return;
             }
@@ -140,17 +145,24 @@
             shownShardID = Number(shardID);
             shownCluster = clusters[Math.floor(shownShardID / max_concurrency)];
             showCluster = true;
+            findCluster = true;
             findClusterErr = "";
             return;
         } catch(e) {
             showCluster = false;
+            findCluster = false;
             findClusterErr = "Invalid server ID";
         }
     }
     function showClusterHandler(id: number) {
-        findClusterInput = "";
-        shownCluster = clusters[id];
-        showCluster = true;
+        if(showCluster && id === shownCluster.cluster_id) {
+            showCluster = false;
+        } else {
+            findClusterInput = "";
+            findCluster = false;
+            shownCluster = clusters[id];
+            showCluster = true;
+        }
     }
 
     //kinda a janky fix for closing, but whatevs it'll work for now
@@ -159,7 +171,7 @@
         if(clicked === null || ! clicked.tagName) return;
         if(clicked.tagName !== 'BUTTON' && clicked.tagName !== 'INPUT' && clicked.tagName !== 'A' 
             && !clicked.classList.contains("cluster") && !clicked.classList.contains("shard") && !clicked.classList.contains("btn")){
-            showCluster = false;
+            if(!findCluster) showCluster = false;
         }
     }
 </script>
@@ -174,7 +186,12 @@
     <div class="w-full 2xl:w-1/2 m-auto flex-col">
         <div class="navbar pb-6">
             <div class="flex-1 pl-2 navbar-start">
-                <span class="text-xl">PluralKit Status</span>
+                <div class="avatar pr-4">
+                    <div class="w-12 rounded">
+                      <img alt="An icon of myriad" src="/myriad_write.png" />
+                    </div>
+                </div>
+                <span class="text-2xl">PluralKit Status</span>
             </div>
 
             <div class="navbar-end">
@@ -204,10 +221,54 @@
                 </ul>
             </div>
         </div>
-        <div class="card bg-base-200 shadow-sm flex flex-col">
-            <div class="pl-8 pr-8 pt-8 flex flex-col">
-                <span class="text-md">{shards_total} shards ({shards_up} up)</span>
-                <span class="text-md">Average Latency: {avg_latency}ms</span>
+        <div class="card bg-base-200 shadow-sm">
+            <div class="p-8 flex flex-col">
+                <div class="stats shadow">
+                    <div class="stat">
+                      <div class="stat-title">Shards Up</div>
+                      <div class="stat-value">{shards_up} / {shards_total}</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title"> Average Latency</div>
+                        <div class="stat-value">{avg_latency} ms</div>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+                <span class="text-lg">Clusters:</span>
+
+                <div class="w-full flex justify-center">
+                    <div class="flex flex-wrap flex-row gap-2 py-6 justify-center">
+                        {#each clusters as cluster}
+                        <button class="cluster aspect-square tooltip indicator {cluster.status}" on:click={()=>{showClusterHandler(cluster.cluster_id)}}>
+                            {cluster.cluster_id}
+                            <div class="tooltip-content">
+                                avg latency: {cluster.avg_latency}
+                            </div>
+                        </button>
+                        {/each}
+                    </div>
+                </div>
+                
+                {#if showCluster}
+                <div class="card bg-base-300 p-8" transition:slide="{{duration: 250}}">
+                    <span class="text-center">Cluster {shownCluster.cluster_id} Shards:</span>
+                    <div class="flex flex-row flex-wrap gap-2 p-4 justify-center">
+                        {#each shownCluster.shards as shard}
+                        <div class="shard aspect-square p-2 tooltip indicator {shard.status}">
+                            {#if shard.shard_id == shownShardID && findCluster} <span class="indicator-item status status-info status-lg"></span> {/if}
+                            {shard.shard_id}
+                            <div class="tooltip-content flex flex-col">
+                                <span>up: {shard.up}</span>
+                                <span>latency: {shard.latency}</span>
+                                <span>last heartbeat: {dateAgo(shard.last_heartbeat)}</span>
+                                <span>last connection: {dateAgo(shard.last_connection)}</span>
+                            </div>
+                        </div>
+                        {/each}
+                    </div>
+                </div>
+                {/if}
 
                 <div class="divider"></div>
                 
@@ -218,41 +279,9 @@
                     <span class="text-sm text-error">{findClusterErr}</span>
                 {/if}
                 {#if findClusterInput != "" && findClusterErr == "" && showCluster}
-                    <span class="text-sm text-info">You are on cluster {shownCluster.cluster_id}, shard {shownShardID}!</span>
+                    <span class="text-md text-info pt-4">You are on cluster {shownCluster.cluster_id}, shard {shownShardID}!</span>
                 {/if}
-                <div class="divider"></div>
-                <span class="text-lg">Clusters:</span>
-
-                <div class="flex flex-wrap flex-row gap-2 pt-6 pb-6 justify-left">
-                    {#each clusters as cluster}
-                    <button class="cluster aspect-square flex flex-row flex-wrap p-2 tooltip indicator {cluster.status}" on:click={()=>{showClusterHandler(cluster.cluster_id)}}>
-                        {cluster.cluster_id}
-                        <div class="tooltip-content flex flex-col">
-                            avg latency: {cluster.avg_latency}
-                        </div>
-                    </button>
-                    {/each}
-                </div>
             </div>
-
-            {#if showCluster}
-            <div class="card bg-base-300 p-8" transition:slide="{{duration: 250}}">
-                <span>Cluster {shownCluster.cluster_id} Shards:</span>
-                <div class="flex flex-row flex-wrap gap-2 p-4">
-                    {#each shownCluster.shards as shard}
-                    <div class="shard aspect-square p-2 tooltip {shard.status}">
-                        {shard.shard_id}
-                        <div class="tooltip-content flex flex-col">
-                            <span>up: {shard.up}</span>
-                            <span>latency: {shard.latency}</span>
-                            <span>last heartbeat: {dateAgo(shard.last_heartbeat)}</span>
-                            <span>last connection: {dateAgo(shard.last_connection)}</span>
-                        </div>
-                    </div>
-                    {/each}
-                </div>
-            </div>
-            {/if}
         </div>
     </div>
 </div>
@@ -264,7 +293,6 @@
     height: 4em;
     border-radius: 4px;
     background-color: #888888;
-    text-align: center;
     justify-content: center;
     align-items: center;
     cursor: pointer;
@@ -275,7 +303,6 @@
     height: 3em;
     border-radius: 4px;
     background-color: #888888;
-    text-align: center;
     justify-content: center;
     align-items: center;
 }
