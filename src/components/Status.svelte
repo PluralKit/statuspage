@@ -14,6 +14,10 @@
 
     let shownIncidentDetails: SvelteMap<string, boolean> = $state(new SvelteMap<string, boolean>());
     let status: Status | undefined = $state();
+
+    let statusText: string | undefined = $state();
+    let statusClass: string | undefined = $state();
+    
     let error: any = $state();
 
     onMount(async () => {
@@ -62,54 +66,74 @@
                 console.error(e);
             }
         }
+
+        switch (status?.status) {
+            case "operational":
+                statusText = "All systems operational!"
+                statusClass = "alert-success"
+                break;
+            case "degraded":
+                statusText = "Some systems degraded!"
+                statusClass = "alert-warning"
+                break;
+            case "major_outage":
+                statusText = "Major systems outage!"
+                statusClass = "alert-error"
+                break;
+            default:
+                break;
+        }
     })
 </script>
 
+
+
+{#if status}
 <div class="card p-4">
-
-<div role="alert" class="alert alert-error">
-    <span class="text-center text-lg">Major System Outage!</span>
-</div>
-
-{#if status && status.active_incidents.length > 0 && !error}
-    <div class="w-full flex flex-col gap-4 py-4" role="region" aria-label="Active incidents">
-        {#each active_incidents as incident}
-            {@const impact_class = incident.impact == "none" ? "badge-neutral" : incident?.impact == "minor" ? "badge-warning" : "badge-error"}
-            {@const incident_class = incident.updates && incident.updates.length > 0 ? "incident" : ""}
-            <button class="card bg-base-200 w-full shadow-sm {incident_class}" onclick={()=>{toggleIncidentDetails(incident.id)}}>
-                <div class="card-body">
-                    <h2 class="card-title">
-                        <div class="flex flex-row w-full">
-                            {incident.name}
-                            <div class="ml-auto items-end">
-                                <div class="badge {impact_class}">{incident.impact}</div>
-                            </div>
-                        </div>
-                    </h2>
-                    <span class="text-left">{incident.description}</span>
-                    {#if shownIncidentDetails.get(incident.id) && incident.updates && incident.updates.length > 0}
-                        <div transition:slide="{{duration: 250}}">
-                            <div class="divider"></div>
-                            <ul class="timeline timeline-vertical timeline-compact gap-4">
-                                {#each incident.updates as update}
-                                <li>
-                                    <div class="timeline-start">{dateAgo(update.timestamp)}</div>
-                                    <hr />
-                                    <div class="timeline-end timeline-box">{update.text}</div>
-                                </li>
-                                {/each}
-                            </ul>
-                        </div>
-                    {/if}
-                    {#if incident.timestamp}
-                        <div class="card-actions justify-end">Started {dateAgo(incident.timestamp)}</div>
-                    {/if}
-                </div>
-            </button>
-        {/each}
+    <div role="alert" class="alert {statusClass}">
+        <span class="text-center text-lg">{statusText}</span>
     </div>
-{/if}
+
+    {#if status.active_incidents.length > 0 && !error}
+        <div class="w-full flex flex-col gap-4 py-4" role="region" aria-label="Active incidents">
+            {#each active_incidents as incident}
+                {@const impact_class = incident.impact == "none" ? "badge-neutral" : incident?.impact == "minor" ? "badge-warning" : "badge-error"}
+                {@const incident_class = incident.updates && incident.updates.length > 0 ? "incident" : ""}
+                <button class="card bg-base-200 w-full shadow-sm {incident_class}" onclick={()=>{toggleIncidentDetails(incident.id)}}>
+                    <div class="card-body">
+                        <h2 class="card-title">
+                            <div class="flex flex-row w-full">
+                                {incident.name}
+                                <div class="ml-auto items-end">
+                                    <div class="badge {impact_class}">{incident.impact}</div>
+                                </div>
+                            </div>
+                        </h2>
+                        <span class="text-left">{incident.description}</span>
+                        {#if shownIncidentDetails.get(incident.id) && incident.updates && incident.updates.length > 0}
+                            <div transition:slide="{{duration: 250}}">
+                                <div class="divider"></div>
+                                <ul class="timeline timeline-vertical timeline-compact gap-4">
+                                    {#each incident.updates as update}
+                                    <li>
+                                        <div class="timeline-start">{dateAgo(update.timestamp)}</div>
+                                        <hr />
+                                        <div class="timeline-end timeline-box">{update.text}</div>
+                                    </li>
+                                    {/each}
+                                </ul>
+                            </div>
+                        {/if}
+                        {#if incident.timestamp}
+                            <div class="card-actions justify-end">Started {dateAgo(incident.timestamp)}</div>
+                        {/if}
+                    </div>
+                </button>
+            {/each}
+        </div>
+    {/if}
 </div>
+{/if}
 
 <style>
     .incident {
