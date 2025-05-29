@@ -138,7 +138,7 @@
 <svelte:body onclick={clickHandler} />
 
 <div class="card bg-base-200 shadow-sm">
-    <div class="p-8 flex flex-col gap-4">
+    <div class="p-8 flex flex-col gap-4 w-full">
         {#if error}
         <div role="alert" class="alert alert-error">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
@@ -148,7 +148,7 @@
           </div>
         {/if}
         <h2 class="text-lg">Cluster Status:</h2>
-        <div class="stats bg-base-100 shadow" role="region" aria-label="Overall statistics">
+        <div class="stats bg-base-100 shadow stats-vertical sm:stats-horizontal" role="region" aria-label="Overall statistics">
             <div class="stat">
               <div class="stat-title">Shards Up</div>
               <div class="stat-value">{shards_up} / {shards_total}</div>
@@ -158,8 +158,8 @@
                 <div class="stat-value">{avg_latency} ms</div>
             </div>
         </div>
-        <div class="w-full flex flex-col gap-4 items-center" role="region" aria-label="Cluster status">
-            <div class="flex flex-wrap flex-row gap-2 py-6 justify-center">
+        <div class="flex flex-col items-center w-full" role="region" aria-label="Cluster status">
+            <div class="cluster-ctr flex flex-wrap flex-row py-6 justify-start">
                 {#each clusters as cluster}
                 <button class="cluster aspect-square tooltip indicator {cluster.status}" on:click={()=>{showClusterHandler(cluster.cluster_id)}}>
                     {cluster.cluster_id}
@@ -169,11 +169,10 @@
                 </button>
                 {/each}
             </div>
-            
         </div>
 
         {#if showCluster}
-        <div class="card bg-base-100 p-8" transition:slide="{{duration: 250}}" role="region" aria-label="Current shown cluster" >
+        <div class="card bg-base-100 py-8 px-2" transition:slide="{{duration: 250}}" role="region" aria-label="Current shown cluster" >
             <span class="text-center">Cluster {shownCluster.cluster_id} Shards:</span>
             <div class="flex flex-row flex-wrap gap-2 p-4 justify-center">
                 {#each shownCluster.shards as shard}
@@ -209,20 +208,31 @@
 </div>
 
 <style>
+    :root {
+        --cluster-item-size: 4.2rem;
+        --cluster-gap-size: calc(2*var(--spacing));
+    }
     .cluster
     {
-        width: 4em;
-        height: 4em;
+        width: var(--cluster-item-size);
+        height: var(--cluster-item-size);
         border-radius: 4px;
         background-color: #888888;
         justify-content: center;
         align-items: center;
         cursor: pointer;
     }
+    .cluster-ctr 
+    {
+        /* there's probably a better way to do this that i'm not seeing */
+        /* i spent wayyyyy too long on this tho *sobs* */
+        margin-left: calc(0.5 * mod(100%, var(--cluster-item-size) + var(--cluster-gap-size)));
+        gap: var(--cluster-gap-size);
+    }
     .shard
     {
-        width: 3em;
-        height: 3em;
+        width: 3.5rem;
+        height: 3.5rem;
         border-radius: 4px;
         background-color: #888888;
         justify-content: center;

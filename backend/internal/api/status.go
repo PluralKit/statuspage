@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"pluralkit/status/internal/util"
 	"time"
 
 	"github.com/go-chi/render"
@@ -11,9 +12,9 @@ func (a *API) GetStatus(w http.ResponseWriter, r *http.Request) {
 	incidents := make([]string, 0, 1)
 	incidents = append(incidents, "testing")
 	incidents = append(incidents, "testing2")
-	tmp_stat := Status{
-		Status:          StatusMajorOutage,
-		Impact:          ImpactMajor,
+	tmp_stat := util.Status{
+		Status:          util.StatusMajorOutage,
+		Impact:          util.ImpactMajor,
 		ActiveIncidents: incidents,
 		Timestamp:       time.Now(),
 	}

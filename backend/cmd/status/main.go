@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"pluralkit/status/internal/api"
+	"pluralkit/status/internal/db"
 	"pluralkit/status/internal/util"
 
 	"github.com/caarlos0/env/v11"
@@ -12,6 +13,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/render"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
@@ -26,9 +29,16 @@ func main() {
 		Level: slog.Level(cfg.LogLevel),
 	}))
 
+	logger.Info("setting up database")
+	db := db.NewDB(cfg, logger)
+	if db == nil {
+		os.Exit(1)
+	}
+
 	logger.Info("starting http api on ", slog.String("address", cfg.BindAddr))
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"https://*", "http://*"},

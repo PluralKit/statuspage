@@ -5,6 +5,8 @@
     import { type Incident, type Status } from '$lib/types.ts';
     import { api_url, dateAgo } from '$lib/util';
 
+    import { marked } from 'marked';
+
     function toggleIncidentDetails(id: string){
         shownIncidentDetails.set(id, !shownIncidentDetails.get(id));
     }
@@ -89,7 +91,7 @@
 
 
 {#if status}
-<div class="card p-4">
+<div class="card">
     <div role="alert" class="alert {statusClass}">
         <span class="text-center text-lg">{statusText}</span>
     </div>
@@ -100,7 +102,7 @@
                 {@const impact_class = incident.impact == "none" ? "badge-neutral" : incident?.impact == "minor" ? "badge-warning" : "badge-error"}
                 {@const incident_class = incident.updates && incident.updates.length > 0 ? "incident" : ""}
                 <button class="card bg-base-200 w-full shadow-sm {incident_class}" onclick={()=>{toggleIncidentDetails(incident.id)}}>
-                    <div class="card-body">
+                    <div class="card-body w-full">
                         <h2 class="card-title">
                             <div class="flex flex-row w-full">
                                 {incident.name}
@@ -109,7 +111,7 @@
                                 </div>
                             </div>
                         </h2>
-                        <span class="text-left">{incident.description}</span>
+                        <span class="text-left">{@html marked(incident.description)}</span>
                         {#if shownIncidentDetails.get(incident.id) && incident.updates && incident.updates.length > 0}
                             <div transition:slide="{{duration: 250}}">
                                 <div class="divider"></div>
@@ -117,8 +119,7 @@
                                     {#each incident.updates as update}
                                     <li>
                                         <div class="timeline-start">{dateAgo(update.timestamp)}</div>
-                                        <hr />
-                                        <div class="timeline-end timeline-box">{update.text}</div>
+                                        <div class="timeline-end timeline-box text-left">{@html marked(update.text)}</div>
                                     </li>
                                     {/each}
                                 </ul>

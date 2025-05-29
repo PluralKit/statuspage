@@ -24,6 +24,7 @@ func (l *SlogLevel) UnmarshalText(text []byte) error {
 }
 
 type Config struct {
-	BindAddr string    `env:"pluralkit__status__addr" envDefault:"127.0.0.1:8080"`
+	BindAddr string    `env:"pluralkit__status__addr" envDefault:"0.0.0.0:8080"`
+	DBLoc    string    `env:"pluralkit__status__db_location" envDefault:"file:status.db"`
 	LogLevel SlogLevel `env:"pluralkit__consoleloglevel" envDefault:"info"`
 }

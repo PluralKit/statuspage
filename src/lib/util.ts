@@ -1,5 +1,5 @@
 export const stats_url = "https://api.pluralkit.me/private/discord/shard_state"
-export const api_url = "http://localhost:8080/api/v1"
+export const api_url = "http://skye-desktop.den.vixen.lgbt:8080/api/v1"
 
 //kinda janky but it works
 export function dateAgo(date: Date) {

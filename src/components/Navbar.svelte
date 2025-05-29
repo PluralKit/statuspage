@@ -1,6 +1,6 @@
 <div class="navbar pb-6" role="region" aria-label="Navigation menu">
     <div class="flex-1 pl-2 navbar-start">
-        <div class="avatar pr-4">
+        <div class="pr-4 avatar">
             <div class="w-12 rounded">
               <img alt="An icon of myriad looking down and writing on a notepad" src="myriad_write.png" />
             </div>

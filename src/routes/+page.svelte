@@ -17,7 +17,7 @@
 </svelte:head>
 
 <div class="w-full justify-center p-4">
-    <div class="w-full 2xl:w-1/2 m-auto flex-col">
+    <div class="w-full 2xl:w-1/2 lg:w-3/4 m-auto flex-col">
         <Navbar />
 
         <div class="flex flex-col gap-4">

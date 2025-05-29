@@ -1,6 +1,8 @@
 .svelte-kit
 build
 
+status.db
+
 # Logs
 logs
 *.log
