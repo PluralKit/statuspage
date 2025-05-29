@@ -1,0 +1,29 @@
+package util
+
+import (
+	"errors"
+	"log/slog"
+)
+
+type SlogLevel slog.Level
+
+var LevelMappings = map[string]slog.Level{
+	"debug": slog.LevelDebug,
+	"info":  slog.LevelInfo,
+	"warn":  slog.LevelWarn,
+	"error": slog.LevelError,
+}
+
+func (l *SlogLevel) UnmarshalText(text []byte) error {
+	lvl, ok := LevelMappings[string(text)]
+	if !ok {
+		return errors.New("invalid log level")
+	}
+	*l = SlogLevel(lvl)
+	return nil
+}
+
+type Config struct {
+	BindAddr string    `env:"pluralkit__status__addr" envDefault:"127.0.0.1:8080"`
+	LogLevel SlogLevel `env:"pluralkit__consoleloglevel" envDefault:"info"`
+}
