@@ -73,10 +73,15 @@ func (i *IncidentList) Render(w http.ResponseWriter, r *http.Request) error { re
 
 // struct representing system status, rougly based upon the atlassian statuspage format
 type Status struct {
-	Status          OverallStatus `json:"status"`
-	Impact          Impact        `json:"impact"`
-	ActiveIncidents []string      `json:"active_incidents"` //list of active incident IDs formatted as a slice of strings
-	Timestamp       time.Time     `json:"timestamp"`        //timestamp that this status report was generated/retrieved at
+	Status          OverallStatus `json:"status" bun:"status"`
+	Impact          Impact        `json:"impact" bun:"impact"`
+	ActiveIncidents []string      `json:"active_incidents" bun:"active_incidents"` //list of active incident IDs formatted as a slice of strings
+}
+
+type StatusWrapper struct {
+	bun.BaseModel `bun:"table:status"`
+	ID            int    `bun:"id,pk"`
+	Status        Status `json:"status"`
 }
 
 // render helper function for Status

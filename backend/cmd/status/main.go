@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"pluralkit/status/internal/api"
 	"pluralkit/status/internal/db"
 	"pluralkit/status/internal/util"
+	"syscall"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/go-chi/chi/v5"
@@ -18,6 +21,8 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
+
 	var cfg util.Config
 	err := env.Parse(&cfg)
 	if err != nil {
@@ -29,10 +34,20 @@ func main() {
 		Level: slog.Level(cfg.LogLevel),
 	}))
 
+	//setup our signal handler
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
 	logger.Info("setting up database")
 	db := db.NewDB(cfg, logger)
 	if db == nil {
 		os.Exit(1)
+	}
+
+	var status util.Status
+	status, err = db.LoadStatus(ctx)
+	if err != nil {
+		logger.Info("status not loaded from database", slog.Any("error", err))
 	}
 
 	logger.Info("starting http api on ", slog.String("address", cfg.BindAddr))
@@ -43,8 +58,24 @@ func main() {
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"https://*", "http://*"},
 	})) //tmp for dev
-	apiInstance := api.NewAPI(cfg, logger)
+	apiInstance := api.NewAPI(cfg, logger, &status, db)
 	apiInstance.SetupRoutes(r)
 
-	http.ListenAndServe(cfg.BindAddr, r)
+	go func() {
+		err := http.ListenAndServe(cfg.BindAddr, r)
+		if err != nil {
+			logger.Error("error while running http router!", slog.Any("error", err))
+		}
+	}()
+
+	//wait until sigint/sigterm and safely shutdown
+	sig := <-quit
+
+	logger.Info("shutting down", slog.String("signal", sig.String()))
+	err = db.SaveStatus(ctx, status)
+	if err != nil {
+		logger.Error("error while saving status", slog.Any("error", err))
+	}
+
+	db.CloseDB()
 }
