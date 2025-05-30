@@ -18,15 +18,19 @@
     let status: Status | undefined = $state();
 
     let statusText: string | undefined = $state();
+    let statusInfoText: string | undefined = $state();
     let statusClass: string | undefined = $state();
     
     let error: any = $state();
 
-    onMount(async () => {
+    async function fetchStatus() {
         try {
             const response = await fetch(api_url + "/status")
             const data = await response.json();
-            status = data;
+            status = {
+                ...data,
+                timestamp: new Date(data.timestamp)
+            };
         } catch (e) {
             error = e;
             console.error(e);
@@ -34,7 +38,7 @@
 
         if (status && status.active_incidents.length > 0) {
             try {
-                const response = await fetch(api_url + "/incidents")
+                const response = await fetch(api_url + "/incidents/active")
                 const data = await response.json();
                 const entries = Object.entries(data.incidents).map(([id, incidentData]: [string, any]) => {
                     const incident: Incident = {
@@ -69,22 +73,30 @@
             }
         }
 
+        // TODO: better wording here? i now realize that 'systems' could be confused for literal pk systems
         switch (status?.status) {
             case "operational":
                 statusText = "All systems operational!"
+                statusInfoText = ""
                 statusClass = "alert-success"
                 break;
             case "degraded":
                 statusText = "Some systems degraded!"
+                statusInfoText = "Some things might not work properly, see incidents listed below for details."
                 statusClass = "alert-warning"
                 break;
             case "major_outage":
                 statusText = "Major systems outage!"
+                statusInfoText = "Most things probably aren't functioning, see incidents listed below for details."
                 statusClass = "alert-error"
                 break;
             default:
                 break;
         }
+    }
+
+    onMount(async () => {
+        await fetchStatus();
     })
 </script>
 
@@ -92,8 +104,10 @@
 
 {#if status}
 <div class="card">
-    <div role="alert" class="alert {statusClass}">
-        <span class="text-center text-lg">{statusText}</span>
+    <div role="alert" class="alert {statusClass} flex flex-col items-start gap-1">
+        <span class="text-lg font-bold">{statusText}</span>
+        <span class="text-md">{statusInfoText}</span>
+        <span class="text-xs italic pt-2">Last refreshed status at {status.timestamp.toLocaleTimeString()}</span>
     </div>
 
     {#if status.active_incidents.length > 0 && !error}
@@ -125,9 +139,9 @@
                                 </ul>
                             </div>
                         {/if}
-                        {#if incident.timestamp}
-                            <div class="card-actions justify-end">Started {dateAgo(incident.timestamp)}</div>
-                        {/if}
+                        <div class="card-actions justify-end">
+                            <span class="text-sm italic pt-2">Started {dateAgo(incident.timestamp)} | {incident.id}</span>
+                        </div>
                     </div>
                 </button>
             {/each}

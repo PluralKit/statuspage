@@ -11,16 +11,14 @@ import (
 type API struct {
 	Config   util.Config
 	Logger   *slog.Logger
-	Status   *util.Status
 	Database *db.DB
 }
 
-func NewAPI(config util.Config, logger *slog.Logger, status *util.Status, database *db.DB) *API {
+func NewAPI(config util.Config, logger *slog.Logger, database *db.DB) *API {
 	moduleLogger := logger.With(slog.String("module", "API"))
 	return &API{
 		Config:   config,
 		Logger:   moduleLogger,
-		Status:   status,
 		Database: database,
 	}
 }
@@ -46,6 +44,12 @@ func (a *API) SetupRoutes(router *chi.Mux) {
 						r.Delete("/", a.DeleteUpdate)
 					})
 				})
+				/*
+					TODO: add a resolve route
+					or a more general status update route?
+					tryin to keep it simple, but more routes might be the way to go here
+					we need to be able to auto set resolution time somehow ?
+				*/
 			})
 		})
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log/slog"
 	"net/http"
 	"os"
@@ -21,8 +20,6 @@ import (
 )
 
 func main() {
-	ctx := context.Background()
-
 	var cfg util.Config
 	err := env.Parse(&cfg)
 	if err != nil {
@@ -44,12 +41,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	var status util.Status
-	status, err = db.LoadStatus(ctx)
-	if err != nil {
-		logger.Info("status not loaded from database", slog.Any("error", err))
-	}
-
 	logger.Info("starting http api on ", slog.String("address", cfg.BindAddr))
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -58,7 +49,7 @@ func main() {
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"https://*", "http://*"},
 	})) //tmp for dev
-	apiInstance := api.NewAPI(cfg, logger, &status, db)
+	apiInstance := api.NewAPI(cfg, logger, db)
 	apiInstance.SetupRoutes(r)
 
 	go func() {
@@ -70,12 +61,6 @@ func main() {
 
 	//wait until sigint/sigterm and safely shutdown
 	sig := <-quit
-
 	logger.Info("shutting down", slog.String("signal", sig.String()))
-	err = db.SaveStatus(ctx, status)
-	if err != nil {
-		logger.Error("error while saving status", slog.Any("error", err))
-	}
-
 	db.CloseDB()
 }
