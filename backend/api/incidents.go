@@ -161,13 +161,7 @@ func (a *API) AddUpdate(w http.ResponseWriter, r *http.Request) {
 
 	var update util.IncidentUpdate
 	update.IncidentID = chi.URLParam(r, "incidentID")
-
-	err = json.Unmarshal(data, &update)
-	if err != nil {
-		http.Error(w, "error while parsing update data", 400)
-		a.Logger.Error("error while parsing update data", slog.Any("error", err))
-		return
-	}
+	update.Text = string(data)
 
 	id, err := a.Database.CreateUpdate(r.Context(), update)
 	if err != nil {
@@ -188,13 +182,8 @@ func (a *API) EditUpdate(w http.ResponseWriter, r *http.Request) {
 
 	var update util.UpdatePatch
 	id := chi.URLParam(r, "updateID")
-
-	err = json.Unmarshal(data, &update)
-	if err != nil {
-		http.Error(w, "error while parsing update data", 400)
-		a.Logger.Error("error while parsing update data", slog.Any("error", err))
-		return
-	}
+	str := string(data)
+	update.Text = &str
 
 	err = a.Database.EditUpdate(r.Context(), id, update)
 	if err != nil {

@@ -33,12 +33,10 @@ func (a *API) SetupRoutes(router *chi.Mux) {
 			r.Get("/active", a.GetActiveIncidents)
 			r.Route("/{incidentID}", func(r chi.Router) {
 				r.Get("/", a.GetIncident)
-				r.Route("/update", func(r chi.Router) {
-					r.Route("/{updateID}", func(r chi.Router) {
-						r.Get("/", a.GetUpdate)
-					})
-				})
 			})
+		})
+		r.Route("/updates/{updateID}", func(r chi.Router) {
+			r.Get("/", a.GetUpdate)
 		})
 
 		r.Route("/admin", func(r chi.Router) {
@@ -47,14 +45,12 @@ func (a *API) SetupRoutes(router *chi.Mux) {
 				r.Route("/{incidentID}", func(r chi.Router) {
 					r.Patch("/", a.EditIncident)
 					r.Delete("/", a.DeleteIncident)
-					r.Route("/update", func(r chi.Router) {
-						r.Post("/", a.AddUpdate)
-						r.Route("/{updateID}", func(r chi.Router) {
-							r.Patch("/", a.EditUpdate)
-							r.Delete("/", a.DeleteUpdate)
-						})
-					})
+					r.Post("/update", a.AddUpdate)
 				})
+			})
+			r.Route("/updates/{updateID}", func(r chi.Router) {
+				r.Patch("/", a.EditUpdate)
+				r.Delete("/", a.DeleteUpdate)
 			})
 		})
 

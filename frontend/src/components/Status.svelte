@@ -39,7 +39,7 @@
 
         if (status && status.active_incidents.length > 0) {
             try {
-                const response = await fetch(PUBLIC_API_URL + "/api/v1/incidents/active")
+                const response = await fetch(PUBLIC_API_URL + "/api/v1/incidents/active");
                 const data = await response.json();
                 const entries = Object.entries(data.incidents).map(([id, incidentData]: [string, any]) => {
                     const incident: Incident = {
@@ -122,7 +122,7 @@
                             <div class="flex flex-row w-full">
                                 {incident.name}
                                 <div class="ml-auto items-end">
-                                    <div class="badge {impact_class}">{incident.impact}</div>
+                                    {#if incident.impact != "none"}<div class="badge {impact_class}">{incident.impact}</div>{/if}
                                 </div>
                             </div>
                         </h2>
