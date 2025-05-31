@@ -5,7 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"pluralkit/status/internal/util"
+	"pluralkit/status/util"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"

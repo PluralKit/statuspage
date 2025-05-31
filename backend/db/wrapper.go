@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
-	"pluralkit/status/internal/util"
+	"pluralkit/status/util"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"

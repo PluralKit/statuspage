@@ -2,8 +2,8 @@ package api
 
 import (
 	"log/slog"
-	"pluralkit/status/internal/db"
-	"pluralkit/status/internal/util"
+	"pluralkit/status/db"
+	"pluralkit/status/util"
 
 	"github.com/go-chi/chi/v5"
 )

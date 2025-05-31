@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"pluralkit/status/internal/api"
-	"pluralkit/status/internal/db"
-	"pluralkit/status/internal/util"
+	"pluralkit/status/api"
+	"pluralkit/status/db"
+	"pluralkit/status/util"
 	"syscall"
 
 	"github.com/caarlos0/env/v11"
@@ -51,6 +51,9 @@ func main() {
 	})) //tmp for dev
 	apiInstance := api.NewAPI(cfg, logger, db)
 	apiInstance.SetupRoutes(r)
+
+	fs := http.FileServer(http.Dir("./srv"))
+	r.Handle("/*", fs)
 
 	go func() {
 		err := http.ListenAndServe(cfg.BindAddr, r)

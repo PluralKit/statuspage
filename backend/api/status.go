@@ -2,7 +2,7 @@ package api
 
 import (
 	"net/http"
-	"pluralkit/status/internal/util"
+	"pluralkit/status/util"
 	"time"
 
 	"github.com/go-chi/render"
