@@ -3,7 +3,8 @@
     import { SvelteMap, SvelteSet } from 'svelte/reactivity';
     import { slide } from 'svelte/transition';
     import { type Incident, type Status } from '$lib/types.ts';
-    import { api_url, dateAgo } from '$lib/util';
+    import { PUBLIC_API_URL } from '$env/static/public';
+    import { dateAgo } from '$lib/util';
 
     import { marked } from 'marked';
 
@@ -25,7 +26,7 @@
 
     async function fetchStatus() {
         try {
-            const response = await fetch(api_url + "/status")
+            const response = await fetch(PUBLIC_API_URL + "/api/v1/status")
             const data = await response.json();
             status = {
                 ...data,
@@ -38,7 +39,7 @@
 
         if (status && status.active_incidents.length > 0) {
             try {
-                const response = await fetch(api_url + "/incidents/active")
+                const response = await fetch(PUBLIC_API_URL + "/api/v1/incidents/active")
                 const data = await response.json();
                 const entries = Object.entries(data.incidents).map(([id, incidentData]: [string, any]) => {
                     const incident: Incident = {

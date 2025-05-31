@@ -2,7 +2,8 @@
     import { onMount } from 'svelte';
     import { slide } from 'svelte/transition';
     
-    import { dateAgo, getShardID, stats_url } from '$lib/util';
+    import { dateAgo, getShardID } from '$lib/util';
+    import { PUBLIC_SHARD_URL } from '$env/static/public';
     import { type Cluster, type Shard } from '$lib/types';
 
     let clusters: Cluster[] = [];
@@ -24,7 +25,7 @@
 
     onMount(async () => {
         try {
-            const response = await fetch(stats_url);
+            const response = await fetch(PUBLIC_SHARD_URL);
             const data = await response.json();
 
             let shards: Shard[] = data.shards.map((item: any) => {

@@ -13,7 +13,6 @@ import (
 	"github.com/caarlos0/env/v11"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 	"github.com/go-chi/render"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -46,14 +45,14 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(render.SetContentType(render.ContentTypeJSON))
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{"https://*", "http://*"},
-	})) //tmp for dev
 	apiInstance := api.NewAPI(cfg, logger, db)
 	apiInstance.SetupRoutes(r)
 
-	fs := http.FileServer(http.Dir("./srv"))
-	r.Handle("/*", fs)
+	if cfg.RunDev {
+		logger.Warn("serving /srv directory, this is intended for development use only!")
+		fs := http.FileServer(http.Dir("./srv"))
+		r.Handle("/*", fs)
+	}
 
 	go func() {
 		err := http.ListenAndServe(cfg.BindAddr, r)

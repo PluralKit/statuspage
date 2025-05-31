@@ -15,7 +15,10 @@ type wrapper struct {
 
 func (a *API) GetStatus(w http.ResponseWriter, r *http.Request) {
 	data := wrapper{
-		util.Status{},
+		util.Status{
+			OverallStatus:   util.StatusOperational,
+			ActiveIncidents: make([]string, 0),
+		},
 		time.Now(),
 	}
 
