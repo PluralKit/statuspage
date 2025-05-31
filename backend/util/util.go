@@ -5,6 +5,8 @@ import (
 	"log/slog"
 )
 
+var ErrNotFound = errors.New("resource not found")
+
 type SlogLevel slog.Level
 
 var LevelMappings = map[string]slog.Level{

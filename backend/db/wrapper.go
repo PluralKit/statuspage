@@ -114,7 +114,7 @@ func (d *DB) SaveStatus(ctx context.Context, status util.Status) error {
 func (d *DB) GetIncidents(ctx context.Context, ids []string) (util.IncidentList, error) {
 	list := util.IncidentList{
 		Timestamp: time.Now(),
-		Incidents: make(map[string]util.Incident),
+		Incidents: make(map[string]util.Incident, 0),
 	}
 
 	if len(ids) == 0 {
@@ -137,6 +137,29 @@ func (d *DB) GetIncidents(ctx context.Context, ids []string) (util.IncidentList,
 	return list, nil
 }
 
+func (d *DB) GetIncidentsBefore(ctx context.Context, before time.Time) (util.IncidentList, error) {
+	list := util.IncidentList{
+		Timestamp: time.Now(),
+		Incidents: make(map[string]util.Incident, 0),
+	}
+
+	incidents := make([]util.Incident, 0)
+	err := d.database.NewSelect().
+		Model(&incidents).
+		Relation("Updates").
+		Where("timestamp < ?", before).
+		Limit(25).
+		Scan(ctx)
+	if err != nil {
+		return list, err
+	}
+
+	for _, incident := range incidents {
+		list.Incidents[incident.ID] = incident
+	}
+	return list, nil
+}
+
 func (d *DB) GetActiveIncidents(ctx context.Context) (util.IncidentList, error) {
 	list := util.IncidentList{
 		Timestamp: time.Now(),
@@ -144,7 +167,6 @@ func (d *DB) GetActiveIncidents(ctx context.Context) (util.IncidentList, error) 
 	}
 
 	incidents := make([]util.Incident, 0)
-	//TODO: do this in a faster way lmao
 	err := d.database.NewSelect().
 		Model(&incidents).
 		Relation("Updates").
@@ -161,6 +183,13 @@ func (d *DB) GetActiveIncidents(ctx context.Context) (util.IncidentList, error) 
 }
 
 func (d *DB) CreateIncident(ctx context.Context, incident util.Incident) (string, error) {
+	if !incident.Impact.IsValid() {
+		return "", errors.New("invalid impact field")
+	}
+	if !incident.Status.IsValid() {
+		return "", errors.New("invalid status field")
+	}
+
 	count, err := d.database.NewSelect().Model((*util.Incident)(nil)).Count(ctx)
 	if err != nil {
 		return "", err
@@ -185,7 +214,6 @@ func (d *DB) CreateIncident(ctx context.Context, incident util.Incident) (string
 
 func (d *DB) EditIncident(ctx context.Context, id string, patch util.IncidentPatch) error {
 	// we use a map to patch because... that seems to be the easiest way?
-	// TODO: validation of status and impact fields
 	patchMap := make(map[string]interface{})
 
 	if patch.Name != nil {
@@ -195,9 +223,20 @@ func (d *DB) EditIncident(ctx context.Context, id string, patch util.IncidentPat
 		patchMap["description"] = *patch.Description
 	}
 	if patch.Status != nil {
+		if !patch.Status.IsValid() {
+			return errors.New("invalid status field")
+		}
 		patchMap["status"] = *patch.Status
+		if *patch.Status == util.StatusResolved {
+			patchMap["resolution_timestamp"] = time.Now()
+		} else {
+			patchMap["resolution_timestamp"] = time.Time{}
+		}
 	}
 	if patch.Impact != nil {
+		if !patch.Impact.IsValid() {
+			return errors.New("invalid impact field")
+		}
 		patchMap["impact"] = *patch.Impact
 	}
 
@@ -206,20 +245,42 @@ func (d *DB) EditIncident(ctx context.Context, id string, patch util.IncidentPat
 	}
 	patchMap["last_update"] = time.Now()
 
-	_, err := d.database.NewUpdate().
+	res, err := d.database.NewUpdate().
 		Model(&patchMap).
 		Table("incidents").
 		Where("id = ?", id).
 		Exec(ctx)
-	return err
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	} else if rows == 0 {
+		return util.ErrNotFound
+	}
+
+	return nil
 }
 
 func (d *DB) DeleteIncident(ctx context.Context, incident util.Incident) error {
-	_, err := d.database.NewDelete().
+	res, err := d.database.NewDelete().
 		Model(&incident).
 		WherePK().
 		Exec(ctx)
-	return err
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	} else if rows == 0 {
+		return util.ErrNotFound
+	}
+
+	return nil
 }
 
 func (d *DB) CreateUpdate(ctx context.Context, update util.IncidentUpdate) (string, error) {
@@ -289,18 +350,38 @@ func (d *DB) EditUpdate(ctx context.Context, id string, update util.UpdatePatch)
 		return nil // prevent update if there isn't anything to update
 	}
 
-	_, err := d.database.NewUpdate().
+	res, err := d.database.NewUpdate().
 		Model(&patchMap).
 		Table("incident_updates").
 		Where("id = ?", id).
 		Exec(ctx)
-	return err
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	} else if rows == 0 {
+		return util.ErrNotFound
+	}
+	return nil
 }
 
 func (d *DB) DeleteUpdate(ctx context.Context, update util.IncidentUpdate) error {
-	_, err := d.database.NewDelete().
+	res, err := d.database.NewDelete().
 		Model(&update).
 		WherePK().
 		Exec(ctx)
-	return err
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	} else if rows == 0 {
+		return util.ErrNotFound
+	}
+	return nil
 }

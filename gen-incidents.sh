@@ -38,23 +38,23 @@ incidentA_ID=$(curl --header "Content-Type: application/json" \
   --silent \
   --request POST \
   --data "$incidentA" \
-  "$url/api/v1/incidents/create"
+  "$url/api/v1/admin/incidents/create"
 )
 
 curl --header "Content-Type: application/json" \
   --silent \
   --request POST \
   --data "$incidentB" \
-  "$url/api/v1/incidents/create"
+  "$url/api/v1/admin/incidents/create"
 
 curl --header "Content-Type: application/json" \
   --silent \
   --request POST \
   --data "$incidentA_updateA" \
-  "$url/api/v1/incidents/$incidentA_ID/update"
+  "$url/api/v1/admin/incidents/$incidentA_ID/update"
 
 curl --header "Content-Type: application/json" \
   --silent \
   --request POST \
   --data "$incidentA_updateB" \
-  "$url/api/v1/incidents/$incidentA_ID/update"
+  "$url/api/v1/admin/incidents/$incidentA_ID/update"

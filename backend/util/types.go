@@ -16,6 +16,16 @@ const (
 	ImpactMajor Impact = "major"
 )
 
+// helper function for validating Impact
+func (i Impact) IsValid() bool {
+	switch i {
+	case ImpactNone, ImpactMinor, ImpactMajor:
+		return true
+	default:
+		return false
+	}
+}
+
 // a type representing the status of an incident
 type IncidentStatus string
 
@@ -25,6 +35,16 @@ const (
 	StatusMonitoring    IncidentStatus = "monitoring"
 	StatusResolved      IncidentStatus = "resolved"
 )
+
+// helper function for validating IncidentStatus
+func (i IncidentStatus) IsValid() bool {
+	switch i {
+	case StatusInvestigating, StatusIdentified, StatusMonitoring, StatusResolved:
+		return true
+	default:
+		return false
+	}
+}
 
 // a type representing the overall system status
 type OverallStatus string
@@ -62,7 +82,7 @@ type Incident struct {
 	Timestamp           time.Time      `json:"timestamp" bun:"timestamp,nullzero,notnull,default:current_timestamp"`
 	LastUpdate          time.Time      `json:"last_update" bun:"last_update,nullzero,notnull,default:current_timestamp"`
 	ResolutionTimestamp time.Time      `json:"resolution_timestamp" bun:"resolution_timestamp,nullzero"`
-	Status              IncidentStatus `json:"status" bun:"status"`
+	Status              IncidentStatus `json:"status" bun:"status,idx:idx_status"`
 	Impact              Impact         `json:"impact" bun:"impact"`
 	Name                string         `json:"name" bun:"name,notnull"`
 	Description         string         `json:"description" bun:"description"`
