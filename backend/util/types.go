@@ -82,7 +82,7 @@ type Incident struct {
 	Timestamp           time.Time      `json:"timestamp" bun:"timestamp,nullzero,notnull,default:current_timestamp"`
 	LastUpdate          time.Time      `json:"last_update" bun:"last_update,nullzero,notnull,default:current_timestamp"`
 	ResolutionTimestamp time.Time      `json:"resolution_timestamp" bun:"resolution_timestamp,nullzero"`
-	Status              IncidentStatus `json:"status" bun:"status,idx:idx_status"`
+	Status              IncidentStatus `json:"status" bun:"status"`
 	Impact              Impact         `json:"impact" bun:"impact"`
 	Name                string         `json:"name" bun:"name,notnull"`
 	Description         string         `json:"description" bun:"description"`

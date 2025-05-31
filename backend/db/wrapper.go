@@ -63,19 +63,39 @@ func (d *DB) CloseDB() {
 func (d *DB) initDB() error {
 	ctx := context.Background()
 
-	_, err := d.database.NewCreateTable().Model((*util.Incident)(nil)).IfNotExists().Exec(ctx)
+	_, err := d.database.NewCreateTable().
+		Model((*util.Incident)(nil)).
+		IfNotExists().
+		Exec(ctx)
 	if err != nil {
 		d.logger.Error("error while creating incidents table", slog.Any("error", err))
 		return err
 	}
+	_, err = d.database.NewCreateIndex().
+		Model((*util.Incident)(nil)).
+		IfNotExists().
+		Index("idx_status").
+		Column("status").
+		Exec(ctx)
+	if err != nil {
+		d.logger.Error("error while creating incidents status index", slog.Any("error", err))
+		return err
+	}
 
-	_, err = d.database.NewCreateTable().Model((*util.IncidentUpdate)(nil)).IfNotExists().Exec(ctx)
+	_, err = d.database.NewCreateTable().
+		Model((*util.IncidentUpdate)(nil)).
+		IfNotExists().
+		ForeignKey(`("incident_id") REFERENCES "incidents" ("id") ON DELETE CASCADE`).
+		Exec(ctx)
 	if err != nil {
 		d.logger.Error("error while creating incidents updates table", slog.Any("error", err))
 		return err
 	}
 
-	_, err = d.database.NewCreateTable().Model((*util.StatusWrapper)(nil)).IfNotExists().Exec(ctx)
+	_, err = d.database.NewCreateTable().
+		Model((*util.StatusWrapper)(nil)).
+		IfNotExists().
+		Exec(ctx)
 	if err != nil {
 		d.logger.Error("error while creating status table", slog.Any("error", err))
 		return err
@@ -195,6 +215,7 @@ func (d *DB) CreateIncident(ctx context.Context, incident util.Incident) (string
 		return "", err
 	}
 
+	//TODO: make sure this is actually unique (this method kinda falls apart when things are deleted...)
 	id, err := d.sq.Encode([]uint64{uint64(count)})
 	if err != nil {
 		return "", err
@@ -280,6 +301,16 @@ func (d *DB) DeleteIncident(ctx context.Context, incident util.Incident) error {
 		return util.ErrNotFound
 	}
 
+	//for some reason this doesn't wanna cascade delete soooo
+	//just in case
+	_, err = d.database.NewDelete().
+		Table("incident_updates").
+		Where("incident_id = ?", incident.ID).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -293,6 +324,7 @@ func (d *DB) CreateUpdate(ctx context.Context, update util.IncidentUpdate) (stri
 		return "", err
 	}
 
+	//TODO: make sure this is actually unique (this method kinda falls apart when things are deleted...)
 	iid := d.sq.Decode(update.IncidentID)
 	id, err := d.sq.Encode(append(iid, uint64(count)))
 	if err != nil {
