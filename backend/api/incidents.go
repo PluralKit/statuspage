@@ -57,21 +57,12 @@ func (a *API) GetActiveIncidents(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) GetIncident(w http.ResponseWriter, r *http.Request) {
-	id := []string{chi.URLParam(r, "incidentID")}
-	list, err := a.Database.GetIncidents(r.Context(), id)
+	incident, err := a.Database.GetIncident(r.Context(), chi.URLParam(r, "incidentID"))
 	if err != nil {
 		http.Error(w, "error while retrieving incident", 500)
 		a.Logger.Error("error while fufilling get incident request", slog.Any("error", err))
 		return
 	}
-
-	if len(list.Incidents) == 0 {
-		http.Error(w, "incident not found", 404)
-		return
-	}
-
-	incident := list.Incidents[id[0]]
-
 	if err := render.Render(w, r, &incident); err != nil {
 		http.Error(w, "error while rendering json", 500)
 		a.Logger.Error("error while rendering json for get incident request", slog.Any("error", err))
