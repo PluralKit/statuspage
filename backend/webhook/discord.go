@@ -41,13 +41,13 @@ func (dw *DiscordWebhook) send(content string) (int64, error) {
 	} else if resp.StatusCode != 200 {
 		return 0, errors.New("error while sending webhook")
 	}
-	defer resp.Body.Close()
 
 	data := DiscordResponse{}
 	_ = json.NewDecoder(resp.Body).Decode(&data)
 	num, _ := strconv.ParseInt(data.ID, 10, 64)
 
-	return num, nil
+	err = resp.Body.Close()
+	return num, err
 }
 
 func (dw *DiscordWebhook) edit(msgID int64, content string) error {
@@ -63,8 +63,9 @@ func (dw *DiscordWebhook) edit(msgID int64, content string) error {
 	} else if resp.StatusCode != 200 {
 		return errors.New("error while editing webhook")
 	}
-	defer resp.Body.Close()
-	return nil
+
+	err = resp.Body.Close()
+	return err
 }
 
 func (dw *DiscordWebhook) genIncidentMessage(incident util.Incident) Message {

@@ -94,7 +94,10 @@ func (a *API) CreateIncident(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte(id))
+	_, err = w.Write([]byte(id))
+	if err != nil {
+		a.Logger.Error("error while sending response", slog.Any("error", err))
+	}
 }
 
 func (a *API) EditIncident(w http.ResponseWriter, r *http.Request) {
@@ -166,7 +169,11 @@ func (a *API) AddUpdate(w http.ResponseWriter, r *http.Request) {
 		a.Logger.Error("error while creating update", slog.Any("error", err))
 		return
 	}
-	w.Write([]byte(id))
+
+	_, err = w.Write([]byte(id))
+	if err != nil {
+		a.Logger.Error("error while sending response", slog.Any("error", err))
+	}
 }
 
 func (a *API) EditUpdate(w http.ResponseWriter, r *http.Request) {

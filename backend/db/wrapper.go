@@ -58,8 +58,8 @@ func NewDB(config util.Config, logger *slog.Logger, eventChannel chan util.Event
 
 	return db
 }
-func (d *DB) CloseDB() {
-	d.database.Close()
+func (d *DB) CloseDB() error {
+	return d.database.Close()
 }
 
 func (d *DB) initDB() error {

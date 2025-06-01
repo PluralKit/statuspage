@@ -51,7 +51,10 @@ func resetStatus(database *db.DB) {
 		status.OverallStatus = util.StatusOperational
 	}
 
-	database.SaveStatus(ctx, status)
+	err = database.SaveStatus(ctx, status)
+	if err != nil {
+		slog.Error("error while saving status to db", slog.Any("error", err))
+	}
 }
 
 func main() {
@@ -136,11 +139,14 @@ func main() {
 						logger.Error("error while sending incident notif!", slog.Any("error", err))
 						continue
 					}
-					db.SaveMessageID(ctx, util.WebhookMessage{
+					err = db.SaveMessageID(ctx, util.WebhookMessage{
 						ID:        incident.ID,
 						MessageID: msgID,
 						Type:      "incident",
 					})
+					if err != nil {
+						logger.Error("error while saving webhook message id", slog.Any("error", err))
+					}
 				case util.EventCreateUpdate:
 					update, ok := (event.Modified).(util.IncidentUpdate)
 					if !ok {
@@ -157,11 +163,14 @@ func main() {
 						logger.Error("error while sending update notif!", slog.Any("error", err))
 						continue
 					}
-					db.SaveMessageID(ctx, util.WebhookMessage{
+					err = db.SaveMessageID(ctx, util.WebhookMessage{
 						ID:        update.ID,
 						MessageID: msgID,
 						Type:      "update",
 					})
+					if err != nil {
+						logger.Error("error while saving webhook message id", slog.Any("error", err))
+					}
 				case util.EventEditIncident:
 					incident, ok := (event.Modified).(util.Incident)
 					if !ok {
@@ -209,5 +218,6 @@ func main() {
 	//wait until sigint/sigterm and safely shutdown
 	sig := <-quit
 	logger.Info("shutting down", slog.String("signal", sig.String()))
-	db.CloseDB()
+	err = db.CloseDB()
+	logger.Error("error while closing db", slog.Any("error", err))
 }
