@@ -1,6 +1,6 @@
 #!/bin/sh
 
-url=http://localhost:8080
+url=http://localhost:80
 
 incidentA=$(cat << END
 {
@@ -12,29 +12,16 @@ incidentA=$(cat << END
 END
 )
 incidentA_updateA=$(cat << END
-{
-    "text": "uhhhh there's a fox in the servers biting on wires???"
-}
+uhhhh there's a fox in the servers biting on wires???
 END
 )
 incidentA_updateB=$(cat << END
-{
-    "text": "we have lured the fox out with a sandwich! working on repairing the wires now"
-}
-END
-)
-
-incidentB=$(cat << END
-{
-    "status": "investigating",
-    "impact": "major",
-    "name": "Myriad fell asleep :(",
-    "description": "PluralKit currently isn't working because Myriad is taking a nap."
-}
+we have lured the fox out with a sandwich! working on repairing the wires now
 END
 )
 
 incidentA_ID=$(curl --header "Content-Type: application/json" \
+  --header "Authorization: Bearer supersecuretoken" \
   --silent \
   --request POST \
   --data "$incidentA" \
@@ -42,18 +29,14 @@ incidentA_ID=$(curl --header "Content-Type: application/json" \
 )
 
 curl --header "Content-Type: application/json" \
-  --silent \
-  --request POST \
-  --data "$incidentB" \
-  "$url/api/v1/admin/incidents/create"
-
-curl --header "Content-Type: application/json" \
+  --header "Authorization: Bearer supersecuretoken" \
   --silent \
   --request POST \
   --data "$incidentA_updateA" \
   "$url/api/v1/admin/incidents/$incidentA_ID/update"
 
 curl --header "Content-Type: application/json" \
+  --header "Authorization: Bearer supersecuretoken" \
   --silent \
   --request POST \
   --data "$incidentA_updateB" \

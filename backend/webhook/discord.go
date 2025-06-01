@@ -125,11 +125,15 @@ func (dw *DiscordWebhook) genIncidentMessage(incident util.Incident) Message {
 }
 
 func (dw *DiscordWebhook) genUpdateMessage(incident util.Incident, update util.IncidentUpdate) Message {
+	notifText := ""
+	if dw.notifRole != "" {
+		notifText = fmt.Sprintf("<@&%s>", dw.notifRole)
+	}
 	return Message{
 		Components: []ComponentBase{
 			{
 				Type:    int(TextDisplay),
-				Content: fmt.Sprintf("<@&%s>", dw.notifRole),
+				Content: notifText,
 			},
 			{
 				Type:        int(Container),

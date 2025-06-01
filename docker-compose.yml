@@ -1,0 +1,29 @@
+services:
+  backend:
+    build:
+      context: .
+      target: backend
+      args:
+        - PUBLIC_API_URL=""
+    volumes:
+    - "data:/app/data"
+    environment:
+      - pluralkit__status__auth_token=${AUTH_TOKEN}
+      - pluralkit__status__notification_webhook=${NOTIFICATION_WEBHOOK}
+      - pluralkit__status__notification_role=${NOTIFICATION_ROLE}
+      - pluralkit__status__db_location=file:/app/data/status.db
+    restart: unless-stopped
+
+  caddy:
+    build:
+      context: .
+      target: caddy
+    cap_add:
+      - NET_ADMIN
+    ports:
+    - "80:80"
+    - "443:443"
+    - "443:443/udp"
+
+volumes:
+  data:
