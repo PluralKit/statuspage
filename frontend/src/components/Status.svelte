@@ -126,7 +126,7 @@
                                 </div>
                             </div>
                         </h2>
-                        <span class="text-left">{@html marked(incident.description)}</span>
+                        <span class=" flex flex-col gap-4 text-left text-base">{@html marked(incident.description)}</span>
                         {#if shownIncidentDetails.get(incident.id) && incident.updates && incident.updates.length > 0}
                             <div transition:slide="{{duration: 250}}">
                                 <div class="divider"></div>
@@ -134,7 +134,7 @@
                                     {#each incident.updates as update}
                                     <li>
                                         <div class="timeline-start">{dateAgo(update.timestamp)}</div>
-                                        <div class="timeline-end timeline-box text-left">{@html marked(update.text)}</div>
+                                        <div class="timeline-end timeline-box flex flex-col gap-4 p-4 text-left text-base">{@html marked(update.text)}</div>
                                     </li>
                                     {/each}
                                 </ul>
@@ -154,5 +154,9 @@
 <style>
     .incident {
         cursor: pointer;
+    }
+    .update-text {
+        
+        line-break: auto;
     }
 </style>

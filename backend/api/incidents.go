@@ -102,6 +102,7 @@ func (a *API) CreateIncident(w http.ResponseWriter, r *http.Request) {
 		a.Logger.Error("error while creating incident", slog.Any("error", err))
 		return
 	}
+
 	w.Write([]byte(id))
 }
 

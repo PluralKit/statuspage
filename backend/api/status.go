@@ -14,34 +14,15 @@ type wrapper struct {
 }
 
 func (a *API) GetStatus(w http.ResponseWriter, r *http.Request) {
-	data := wrapper{
-		util.Status{
-			OverallStatus:   util.StatusOperational,
-			ActiveIncidents: make([]string, 0),
-		},
-		time.Now(),
-	}
-
-	//TODO: do this in a better/more efficent way :3c
-	incidents, err := a.Database.GetActiveIncidents(r.Context())
+	status, err := a.Database.GetStatus(r.Context())
 	if err != nil {
-		http.Error(w, "error while checking status", 500)
+		http.Error(w, "error while getting status", 500)
+		return
 	}
-	highestImpact := util.ImpactNone
-	for key, val := range incidents.Incidents {
-		data.ActiveIncidents = append(data.ActiveIncidents, key)
 
-		//janky, ik lol
-		if val.Impact == util.ImpactMinor && highestImpact != util.ImpactMajor {
-			highestImpact = util.ImpactMinor
-		} else if val.Impact == util.ImpactMajor {
-			highestImpact = util.ImpactMajor
-		}
-	}
-	if highestImpact == util.ImpactMinor {
-		data.OverallStatus = util.StatusDegraded
-	} else if highestImpact == util.ImpactMajor {
-		data.OverallStatus = util.StatusMajorOutage
+	data := wrapper{
+		status,
+		time.Now(),
 	}
 
 	if err := render.Render(w, r, &data); err != nil {

@@ -7,6 +7,24 @@ import (
 	"github.com/uptrace/bun"
 )
 
+// a type representing possible internal events
+type EventType string
+
+const (
+	EventCreateIncident EventType = "create_incident"
+	EventCreateUpdate   EventType = "create_update"
+	EventEditIncident   EventType = "edit_incident"
+	EventEditUpdate     EventType = "edit_update"
+	EventDeleteIncident EventType = "delete_incident"
+	EventDeleteUpdate   EventType = "delete_update"
+)
+
+// helper struct for internal events
+type Event struct {
+	Type     EventType
+	Modified any
+}
+
 // a type representing the impact of an incident or event
 type Impact string
 
@@ -15,6 +33,17 @@ const (
 	ImpactMinor Impact = "minor"
 	ImpactMajor Impact = "major"
 )
+
+var impactSeverity = map[Impact]int{
+	ImpactNone:  0,
+	ImpactMinor: 1,
+	ImpactMajor: 2,
+}
+
+// returns true if x is higher level than y
+func (x Impact) IsGreater(y Impact) bool {
+	return impactSeverity[x] > impactSeverity[y]
+}
 
 // helper function for validating Impact
 func (i Impact) IsValid() bool {
@@ -123,4 +152,12 @@ type StatusWrapper struct {
 	bun.BaseModel `bun:"table:status"`
 	ID            int    `bun:",pk"`
 	Status        Status `json:"status"`
+}
+
+type WebhookMessage struct {
+	bun.BaseModel `bun:"table:webhook_messages,alias:msg"`
+
+	ID        string `bun:"id,pk"`
+	Type      string `bun:"type"`
+	MessageID int64  `bun:"message_id"`
 }

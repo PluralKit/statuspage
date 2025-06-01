@@ -18,10 +18,11 @@ import (
 type DB struct {
 	logger   *slog.Logger
 	database *bun.DB
+	events   chan util.Event
 	sq       *sqids.Sqids
 }
 
-func NewDB(config util.Config, logger *slog.Logger) *DB {
+func NewDB(config util.Config, logger *slog.Logger, eventChannel chan util.Event) *DB {
 	moduleLogger := logger.With(slog.String("module", "db"))
 
 	sqldb, err := sql.Open("sqlite3", config.DBLoc)
@@ -46,6 +47,7 @@ func NewDB(config util.Config, logger *slog.Logger) *DB {
 	db := &DB{
 		logger:   moduleLogger,
 		database: bunDB,
+		events:   eventChannel,
 		sq:       sq,
 	}
 
@@ -101,10 +103,19 @@ func (d *DB) initDB() error {
 		return err
 	}
 
+	_, err = d.database.NewCreateTable().
+		Model((*util.WebhookMessage)(nil)).
+		IfNotExists().
+		Exec(ctx)
+	if err != nil {
+		d.logger.Error("error while creating webhook messages table", slog.Any("error", err))
+		return err
+	}
+
 	return nil
 }
 
-func (d *DB) LoadStatus(ctx context.Context) (util.Status, error) {
+func (d *DB) GetStatus(ctx context.Context) (util.Status, error) {
 	statusWrapper := &util.StatusWrapper{
 		ID: 1,
 		Status: util.Status{
@@ -131,6 +142,28 @@ func (d *DB) SaveStatus(ctx context.Context, status util.Status) error {
 	return err
 }
 
+func (d *DB) GetMessageID(ctx context.Context, id string, msgType string) (int64, error) {
+	msg := util.WebhookMessage{}
+	err := d.database.NewSelect().
+		Model(&msg).
+		Where("id = ?", id).
+		Where("type = ?", msgType).
+		Scan(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return msg.MessageID, nil
+}
+func (d *DB) SaveMessageID(ctx context.Context, msgInfo util.WebhookMessage) error {
+	_, err := d.database.NewInsert().
+		Model(&msgInfo).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (d *DB) GetIncidents(ctx context.Context, ids []string) (util.IncidentList, error) {
 	list := util.IncidentList{
 		Timestamp: time.Now(),
@@ -155,6 +188,20 @@ func (d *DB) GetIncidents(ctx context.Context, ids []string) (util.IncidentList,
 		list.Incidents[incident.ID] = incident
 	}
 	return list, nil
+}
+
+func (d *DB) GetIncident(ctx context.Context, id string) (util.Incident, error) {
+	incident := util.Incident{}
+
+	err := d.database.NewSelect().
+		Model(&incident).
+		Relation("Updates").
+		Where("id = ?", id).
+		Scan(ctx)
+	if err != nil {
+		return incident, err
+	}
+	return incident, nil
 }
 
 func (d *DB) GetIncidentsBefore(ctx context.Context, before time.Time) (util.IncidentList, error) {
@@ -210,27 +257,37 @@ func (d *DB) CreateIncident(ctx context.Context, incident util.Incident) (string
 		return "", errors.New("invalid status field")
 	}
 
-	count, err := d.database.NewSelect().Model((*util.Incident)(nil)).Count(ctx)
+	var maxRow sql.NullInt64
+	var id int64 = 0
+	err := d.database.NewRaw("SELECT MAX(rowid) FROM incidents").Scan(ctx, &maxRow)
+	if err != nil {
+		return "", err
+	}
+	if maxRow.Valid {
+		id = maxRow.Int64
+	}
+
+	sqid, err := d.sq.Encode([]uint64{uint64(id)})
 	if err != nil {
 		return "", err
 	}
 
-	//TODO: make sure this is actually unique (this method kinda falls apart when things are deleted...)
-	id, err := d.sq.Encode([]uint64{uint64(count)})
-	if err != nil {
-		return "", err
-	}
-
-	incident.ID = id
+	incident.ID = sqid
 
 	_, err = d.database.NewInsert().
 		Model(&incident).
+		Returning("*").
 		Exec(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	return id, nil
+	d.events <- util.Event{
+		Type:     util.EventCreateIncident,
+		Modified: incident,
+	}
+
+	return sqid, nil
 }
 
 func (d *DB) EditIncident(ctx context.Context, id string, patch util.IncidentPatch) error {
@@ -266,11 +323,13 @@ func (d *DB) EditIncident(ctx context.Context, id string, patch util.IncidentPat
 	}
 	patchMap["last_update"] = time.Now()
 
+	incident := util.Incident{}
 	res, err := d.database.NewUpdate().
 		Model(&patchMap).
 		Table("incidents").
+		Returning("*").
 		Where("id = ?", id).
-		Exec(ctx)
+		Exec(ctx, &incident)
 	if err != nil {
 		return err
 	}
@@ -280,6 +339,11 @@ func (d *DB) EditIncident(ctx context.Context, id string, patch util.IncidentPat
 		return err
 	} else if rows == 0 {
 		return util.ErrNotFound
+	}
+
+	d.events <- util.Event{
+		Type:     util.EventEditIncident,
+		Modified: incident,
 	}
 
 	return nil
@@ -319,22 +383,27 @@ func (d *DB) CreateUpdate(ctx context.Context, update util.IncidentUpdate) (stri
 		return "", errors.New("incidentID not provided")
 	}
 
-	count, err := d.database.NewSelect().Model((*util.IncidentUpdate)(nil)).Count(ctx)
+	var maxRow sql.NullInt64
+	var id int64 = 0
+	err := d.database.NewRaw("SELECT MAX(rowid) FROM incident_updates").Scan(ctx, &maxRow)
+	if err != nil {
+		return "", err
+	}
+	if maxRow.Valid {
+		id = maxRow.Int64
+	}
+
+	isqid := d.sq.Decode(update.IncidentID)
+	sqid, err := d.sq.Encode([]uint64{isqid[0], uint64(id)})
 	if err != nil {
 		return "", err
 	}
 
-	//TODO: make sure this is actually unique (this method kinda falls apart when things are deleted...)
-	iid := d.sq.Decode(update.IncidentID)
-	id, err := d.sq.Encode(append(iid, uint64(count)))
-	if err != nil {
-		return "", err
-	}
-
-	update.ID = id
+	update.ID = sqid
 
 	_, err = d.database.NewInsert().
 		Model(&update).
+		Returning("*").
 		Exec(ctx)
 	if err != nil {
 		return "", err
@@ -349,7 +418,12 @@ func (d *DB) CreateUpdate(ctx context.Context, update util.IncidentUpdate) (stri
 		return "", err
 	}
 
-	return id, err
+	d.events <- util.Event{
+		Type:     util.EventCreateUpdate,
+		Modified: update,
+	}
+
+	return sqid, err
 }
 
 func (d *DB) GetUpdate(ctx context.Context, id string) (util.IncidentUpdate, error) {
@@ -382,11 +456,13 @@ func (d *DB) EditUpdate(ctx context.Context, id string, update util.UpdatePatch)
 		return nil // prevent update if there isn't anything to update
 	}
 
+	updated := util.IncidentUpdate{}
 	res, err := d.database.NewUpdate().
 		Model(&patchMap).
 		Table("incident_updates").
+		Returning("*").
 		Where("id = ?", id).
-		Exec(ctx)
+		Exec(ctx, &updated)
 	if err != nil {
 		return err
 	}
@@ -396,6 +472,11 @@ func (d *DB) EditUpdate(ctx context.Context, id string, update util.UpdatePatch)
 		return err
 	} else if rows == 0 {
 		return util.ErrNotFound
+	}
+
+	d.events <- util.Event{
+		Type:     util.EventEditUpdate,
+		Modified: updated,
 	}
 	return nil
 }

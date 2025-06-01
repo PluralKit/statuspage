@@ -2,6 +2,7 @@
 build
 status
 status.db
+.env
 
 # Logs
 logs

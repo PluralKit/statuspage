@@ -26,8 +26,11 @@ func (l *SlogLevel) UnmarshalText(text []byte) error {
 }
 
 type Config struct {
-	BindAddr string    `env:"pluralkit__status__addr" envDefault:"0.0.0.0:8080"`
-	RunDev   bool      `env:"pluralkit__status__run_dev" envDefault:"false"`
-	DBLoc    string    `env:"pluralkit__status__db_location" envDefault:"file:status.db"`
-	LogLevel SlogLevel `env:"pluralkit__consoleloglevel" envDefault:"info"`
+	BindAddr            string    `env:"pluralkit__status__addr" envDefault:"0.0.0.0:8080"`
+	AuthToken           string    `env:"pluralkit__status__auth_token"`
+	NotificationWebhook string    `env:"pluralkit__status__notification_webhook"`
+	NotificationRole    string    `env:"pluralkit__status__notification_role"`
+	RunDev              bool      `env:"pluralkit__status__run_dev" envDefault:"false"`
+	DBLoc               string    `env:"pluralkit__status__db_location" envDefault:"file:status.db"`
+	LogLevel            SlogLevel `env:"pluralkit__consoleloglevel" envDefault:"info"`
 }
