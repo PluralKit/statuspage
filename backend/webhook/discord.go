@@ -68,6 +68,14 @@ func (dw *DiscordWebhook) edit(msgID int64, content string) error {
 }
 
 func (dw *DiscordWebhook) genIncidentMessage(incident util.Incident) Message {
+	var mentions *AllowedMentions = nil
+	notifText := "new incident:"
+	if dw.notifRole != "" {
+		notifText = fmt.Sprintf("<@&%s> new incident:", dw.notifRole)
+		mentions = &AllowedMentions{
+			Roles: []string{dw.notifRole},
+		}
+	}
 	color := 0
 	switch incident.Impact {
 	case util.ImpactMinor:
@@ -81,7 +89,7 @@ func (dw *DiscordWebhook) genIncidentMessage(incident util.Incident) Message {
 		Components: []ComponentBase{
 			{
 				Type:    int(TextDisplay),
-				Content: fmt.Sprintf("<@&%s>", dw.notifRole),
+				Content: notifText,
 			},
 			{
 				Type:        int(Container),
@@ -96,7 +104,7 @@ func (dw *DiscordWebhook) genIncidentMessage(incident util.Incident) Message {
 					},
 					{
 						Type:    int(TextDisplay),
-						Content: fmt.Sprintf("## %s \n%s\n", incident.Name, incident.Description),
+						Content: fmt.Sprintf("# %s\n-# **status:** *%s*\t**impact:** *%s*", incident.Name, incident.Status, incident.Impact),
 					},
 					{
 						Type:    int(Seperator),
@@ -104,7 +112,7 @@ func (dw *DiscordWebhook) genIncidentMessage(incident util.Incident) Message {
 					},
 					{
 						Type:    int(TextDisplay),
-						Content: fmt.Sprintf("**status:** *%s*\t**impact:** *%s*", incident.Status, incident.Impact),
+						Content: incident.Description,
 					},
 					{
 						Type:    int(Seperator),
@@ -117,19 +125,37 @@ func (dw *DiscordWebhook) genIncidentMessage(incident util.Incident) Message {
 				},
 			},
 		},
-		Flags: int(ComponentsV2),
-		AllowedMentions: AllowedMentions{
-			Roles: []string{dw.notifRole},
-		},
+		Flags:           int(ComponentsV2),
+		AllowedMentions: mentions,
 	}
 }
 
 func (dw *DiscordWebhook) genUpdateMessage(incident util.Incident, update util.IncidentUpdate) Message {
-	notifText := ""
+	var mentions *AllowedMentions = nil
+	notifText := "new status update:"
 	if dw.notifRole != "" {
-		notifText = fmt.Sprintf("<@&%s>", dw.notifRole)
+		notifText = fmt.Sprintf("<@&%s> new status update:", dw.notifRole)
+		mentions = &AllowedMentions{
+			Roles: []string{dw.notifRole},
+		}
 	}
-	return Message{
+	nameText := fmt.Sprintf("# update: %s", incident.Name)
+	if update.Status != nil {
+		nameText = fmt.Sprintf("# update: %s\n-# **status:** *%s*", incident.Name, incident.Status)
+	}
+	color := 0
+	switch incident.Impact {
+	case util.ImpactMinor:
+		color = 0xfcb700
+	case util.ImpactMajor:
+		color = 0xff637d
+	default:
+		color = 0x99c1f1
+	}
+	if update.Status != nil && *update.Status == util.StatusResolved {
+		color = 0x00d390
+	}
+	msg := Message{
 		Components: []ComponentBase{
 			{
 				Type:    int(TextDisplay),
@@ -137,7 +163,7 @@ func (dw *DiscordWebhook) genUpdateMessage(incident util.Incident, update util.I
 			},
 			{
 				Type:        int(Container),
-				AccentColor: 0x99c1f1,
+				AccentColor: color,
 				Components: []ComponentBase{
 					{
 						Type:    int(TextDisplay),
@@ -148,7 +174,15 @@ func (dw *DiscordWebhook) genUpdateMessage(incident util.Incident, update util.I
 					},
 					{
 						Type:    int(TextDisplay),
-						Content: fmt.Sprintf("## update: %s \n%s\n", incident.Name, update.Text),
+						Content: nameText,
+					},
+					{
+						Type:    int(Seperator),
+						Divider: boolPtr(false),
+					},
+					{
+						Type:    int(TextDisplay),
+						Content: update.Text,
 					},
 					{
 						Type:    int(Seperator),
@@ -161,11 +195,10 @@ func (dw *DiscordWebhook) genUpdateMessage(incident util.Incident, update util.I
 				},
 			},
 		},
-		Flags: int(ComponentsV2),
-		AllowedMentions: AllowedMentions{
-			Roles: []string{dw.notifRole},
-		},
+		Flags:           int(ComponentsV2),
+		AllowedMentions: mentions,
 	}
+	return msg
 }
 
 func (dw *DiscordWebhook) SendIncident(incident util.Incident) (int64, error) {
@@ -214,9 +247,9 @@ type AllowedMentions struct {
 }
 
 type Message struct {
-	Flags           int             `json:"flags,omitempty"`
-	Components      []ComponentBase `json:"components,omitempty"`
-	AllowedMentions AllowedMentions `json:"allowed_mentions,omitempty"`
+	Flags           int              `json:"flags,omitempty"`
+	Components      []ComponentBase  `json:"components,omitempty"`
+	AllowedMentions *AllowedMentions `json:"allowed_mentions,omitempty"`
 }
 
 type ComponentBase struct {

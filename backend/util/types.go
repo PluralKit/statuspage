@@ -88,9 +88,10 @@ const (
 type IncidentUpdate struct {
 	bun.BaseModel `bun:"table:incident_updates,alias:upd"`
 
-	ID        string    `json:"id" bun:"id,pk"`
-	Text      string    `json:"text" bun:"text,notnull"`
-	Timestamp time.Time `json:"timestamp" bun:"timestamp,notnull,default:current_timestamp"`
+	ID        string          `json:"id" bun:"id,pk"`
+	Text      string          `json:"text" bun:"text,notnull"`
+	Status    *IncidentStatus `json:"status,omitempty" bun:"status"`
+	Timestamp time.Time       `json:"timestamp" bun:"timestamp,notnull,default:current_timestamp"`
 
 	IncidentID string `json:"-" bun:"incident_id,notnull"`
 }

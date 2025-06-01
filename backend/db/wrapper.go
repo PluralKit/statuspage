@@ -409,11 +409,26 @@ func (d *DB) CreateUpdate(ctx context.Context, update util.IncidentUpdate) (stri
 		return "", err
 	}
 
-	_, err = d.database.NewUpdate().
-		Model(&util.Incident{}).
-		Set("last_update = ?", time.Now()).
-		Where("id = ?", update.IncidentID).
-		Exec(ctx)
+	if update.Status != nil && update.Status.IsValid() {
+		resTime := time.Time{}
+		if *update.Status == util.StatusResolved {
+			resTime = time.Now()
+		}
+		_, err = d.database.NewUpdate().
+			Model(&util.Incident{}).
+			Set("last_update = ?", time.Now()).
+			Set("status = ?", update.Status).
+			Set("resolution_timestamp = ?", resTime).
+			Where("id = ?", update.IncidentID).
+			Exec(ctx)
+	} else {
+		_, err = d.database.NewUpdate().
+			Model(&util.Incident{}).
+			Set("last_update = ?", time.Now()).
+			Where("id = ?", update.IncidentID).
+			Exec(ctx)
+	}
+
 	if err != nil {
 		return "", err
 	}
