@@ -78,7 +78,7 @@
         switch (status?.status) {
             case "operational":
                 statusText = "All systems operational!"
-                statusInfoText = ""
+                statusInfoText = "There are no active known incidents."
                 statusClass = "alert-success"
                 break;
             case "degraded":
@@ -126,7 +126,7 @@
                                 </div>
                             </div>
                         </h2>
-                        <span class=" flex flex-col gap-4 text-left text-base">{@html marked(incident.description)}</span>
+                        <span class=" flex flex-col gap-4 text-left text-sm">{@html marked(incident.description)}</span>
                         {#if shownIncidentDetails.get(incident.id) && incident.updates && incident.updates.length > 0}
                             <div transition:slide="{{duration: 250}}">
                                 <div class="divider"></div>
@@ -134,14 +134,21 @@
                                     {#each incident.updates as update}
                                     <li>
                                         <div class="timeline-start">{dateAgo(update.timestamp)}</div>
-                                        <div class="timeline-end timeline-box flex flex-col gap-4 p-4 text-left text-base">{@html marked(update.text)}</div>
+                                        <div class="timeline-end timeline-box flex flex-col gap-4 p-4 text-left text-sm">{@html marked(update.text)}</div>
                                     </li>
                                     {/each}
                                 </ul>
                             </div>
                         {/if}
-                        <div class="card-actions justify-end">
-                            <span class="text-sm italic pt-2">Started {dateAgo(incident.timestamp)} | {incident.id}</span>
+                        <div class="card-actions pt-2">
+                            {#if incident.updates && incident.updates.length > 0}
+                            <div class="justify-start">
+                                <span class="text-sm italic justify-start">(click to {shownIncidentDetails.get(incident.id) ? "hide" : "show"} updates)</span>
+                            </div>
+                            {/if}
+                            <div class="justify-end ml-auto">
+                                <span class="text-sm italic">Started {dateAgo(incident.timestamp)} | {incident.id}</span>
+                            </div>
                         </div>
                     </div>
                 </button>
