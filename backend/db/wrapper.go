@@ -167,7 +167,7 @@ func (d *DB) SaveMessageID(ctx context.Context, msgInfo util.WebhookMessage) err
 func (d *DB) GetIncidents(ctx context.Context, ids []string) (util.IncidentList, error) {
 	list := util.IncidentList{
 		Timestamp: time.Now(),
-		Incidents: make(map[string]util.Incident, 0),
+		Incidents: make(map[string]util.Incident, len(ids)),
 	}
 
 	if len(ids) == 0 {
@@ -258,14 +258,15 @@ func (d *DB) CreateIncident(ctx context.Context, incident util.Incident) (string
 	}
 
 	var maxRow sql.NullInt64
-	var id int64 = 0
+	var id int64
 	err := d.database.NewRaw("SELECT MAX(rowid) FROM incidents").Scan(ctx, &maxRow)
 	if err != nil {
 		return "", err
 	}
-	if maxRow.Valid {
-		id = maxRow.Int64
+	if !maxRow.Valid {
+		return "", errors.New("error while getting max rowid")
 	}
+	id = maxRow.Int64
 
 	sqid, err := d.sq.Encode([]uint64{uint64(id)})
 	if err != nil {
@@ -287,7 +288,7 @@ func (d *DB) CreateIncident(ctx context.Context, incident util.Incident) (string
 		Modified: incident,
 	}
 
-	return sqid, nil
+	return incident.ID, nil
 }
 
 func (d *DB) EditIncident(ctx context.Context, id string, patch util.IncidentPatch) error {
@@ -384,21 +385,21 @@ func (d *DB) CreateUpdate(ctx context.Context, update util.IncidentUpdate) (stri
 	}
 
 	var maxRow sql.NullInt64
-	var id int64 = 0
+	var id int64
 	err := d.database.NewRaw("SELECT MAX(rowid) FROM incident_updates").Scan(ctx, &maxRow)
 	if err != nil {
 		return "", err
 	}
-	if maxRow.Valid {
-		id = maxRow.Int64
+	if !maxRow.Valid {
+		return "", errors.New("error while getting max rowid")
 	}
+	id = maxRow.Int64
 
 	isqid := d.sq.Decode(update.IncidentID)
 	sqid, err := d.sq.Encode([]uint64{isqid[0], uint64(id)})
 	if err != nil {
 		return "", err
 	}
-
 	update.ID = sqid
 
 	_, err = d.database.NewInsert().
@@ -443,11 +444,6 @@ func (d *DB) CreateUpdate(ctx context.Context, update util.IncidentUpdate) (stri
 
 func (d *DB) GetUpdate(ctx context.Context, id string) (util.IncidentUpdate, error) {
 	update := util.IncidentUpdate{ID: id}
-
-	if len(id) == 0 {
-		return update, nil
-	}
-
 	err := d.database.NewSelect().
 		Model(&update).
 		WherePK().

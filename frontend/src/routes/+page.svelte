@@ -6,7 +6,6 @@
     import Status from '$components/Status.svelte';
     import Clusters from '$components/Clusters.svelte';
 
-    //uhhhh don't @me, i wrote like 90% of this at 11pm while not awake, todo: cleanup
     onMount(()=>{
         themeChange(false);
     })

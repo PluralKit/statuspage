@@ -70,7 +70,7 @@ func (a *API) SetupRoutes(router *chi.Mux) {
 			if a.Config.AuthToken != "" {
 				r.Use(BasicTokenAuth(a.Config.AuthToken))
 			} else {
-				a.Logger.Warn("auth token is NOT SET! admin endpoint auth disabled!")
+				a.Logger.Warn("auth token is not set! admin endpoint auth disabled!")
 			}
 
 			r.Route("/incidents", func(r chi.Router) {

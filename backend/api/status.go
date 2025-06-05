@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 	"pluralkit/status/util"
 	"time"
@@ -16,7 +17,8 @@ type wrapper struct {
 func (a *API) GetStatus(w http.ResponseWriter, r *http.Request) {
 	status, err := a.Database.GetStatus(r.Context())
 	if err != nil {
-		http.Error(w, "error while getting status", 500)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		a.Logger.Error("error while getting status", slog.Any("error", err))
 		return
 	}
 
@@ -26,7 +28,8 @@ func (a *API) GetStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := render.Render(w, r, &data); err != nil {
-		http.Error(w, "error while rendering json", 500)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		a.Logger.Error("error while rendering json", slog.Any("error", err))
 		return
 	}
 }

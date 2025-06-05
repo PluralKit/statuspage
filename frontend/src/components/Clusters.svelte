@@ -77,7 +77,6 @@
         }
     });
 
-    
     let findClusterInput = "";
     let findClusterErr = "";
     let shownCluster: Cluster;

@@ -31,6 +31,7 @@ func resetStatus(database *db.DB) {
 	incidents, err := database.GetActiveIncidents(ctx)
 	if err != nil {
 		slog.Error("error while resetting status!", slog.Any("error", err))
+		return
 	}
 
 	highestImpact := util.ImpactNone
@@ -54,6 +55,7 @@ func resetStatus(database *db.DB) {
 	err = database.SaveStatus(ctx, status)
 	if err != nil {
 		slog.Error("error while saving status to db", slog.Any("error", err))
+		return
 	}
 }
 
@@ -108,6 +110,7 @@ func main() {
 		err := http.ListenAndServe(cfg.BindAddr, r)
 		if err != nil {
 			logger.Error("error while running http router!", slog.Any("error", err))
+			os.Exit(1)
 		}
 	}()
 

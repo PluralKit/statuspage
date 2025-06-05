@@ -16,8 +16,8 @@
     let active_incidents: Incident[] = $state([]);
 
     let shownIncidentDetails: SvelteMap<string, boolean> = $state(new SvelteMap<string, boolean>());
+    
     let status: Status | undefined = $state();
-
     let statusText: string | undefined = $state();
     let statusInfoText: string | undefined = $state();
     let statusClass: string | undefined = $state();
