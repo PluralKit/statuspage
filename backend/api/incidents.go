@@ -62,6 +62,9 @@ func (a *API) GetIncident(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, util.ErrInvalid) {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
+		} else if errors.Is(err, util.ErrNotFound) {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
 		}
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		a.Logger.Error("error while fufilling get incident request", slog.Any("error", err))
@@ -182,6 +185,9 @@ func (a *API) AddUpdate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, util.ErrInvalid) {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		} else if errors.Is(err, util.ErrNotFound) {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
 		}
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

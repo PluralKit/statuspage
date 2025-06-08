@@ -279,9 +279,10 @@ func (d *DB) CreateIncident(ctx context.Context, incident util.Incident) (string
 		return "", err
 	}
 	if !maxRow.Valid {
-		return "", errors.New("error while getting max rowid")
+		id = 0
+	} else {
+		id = maxRow.Int64
 	}
-	id = maxRow.Int64
 
 	sqid, err := d.sq.Encode([]uint64{uint64(id)})
 	if err != nil {
@@ -420,16 +421,22 @@ func (d *DB) CreateUpdate(ctx context.Context, update util.IncidentUpdate) (stri
 		return "", errors.New("incidentID not provided")
 	}
 
+	exists, err := d.database.NewSelect().Model((*util.Incident)(nil)).Where("id = ?", update.IncidentID).Exists(ctx)
+	if err != nil || !exists {
+		return "", util.ErrNotFound
+	}
+
 	var maxRow sql.NullInt64
 	var id int64
-	err := d.database.NewRaw("SELECT MAX(rowid) FROM incident_updates").Scan(ctx, &maxRow)
+	err = d.database.NewRaw("SELECT MAX(rowid) FROM incident_updates").Scan(ctx, &maxRow)
 	if err != nil {
 		return "", err
 	}
 	if !maxRow.Valid {
-		return "", errors.New("error while getting max rowid")
+		id = 0
+	} else {
+		id = maxRow.Int64
 	}
-	id = maxRow.Int64
 
 	isqid := d.sq.Decode(update.IncidentID)
 	sqid, err := d.sq.Encode([]uint64{isqid[0], uint64(id)})
