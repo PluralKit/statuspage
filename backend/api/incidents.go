@@ -1,7 +1,6 @@
 package api
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"io"
@@ -60,6 +59,10 @@ func (a *API) GetActiveIncidents(w http.ResponseWriter, r *http.Request) {
 func (a *API) GetIncident(w http.ResponseWriter, r *http.Request) {
 	incident, err := a.Database.GetIncident(r.Context(), chi.URLParam(r, "incidentID"))
 	if err != nil {
+		if errors.Is(err, util.ErrInvalid) {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		a.Logger.Error("error while fufilling get incident request", slog.Any("error", err))
 		return
@@ -90,6 +93,10 @@ func (a *API) CreateIncident(w http.ResponseWriter, r *http.Request) {
 
 	id, err := a.Database.CreateIncident(r.Context(), incident)
 	if err != nil {
+		if errors.Is(err, util.ErrInvalid) {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		a.Logger.Error("error while creating incident", slog.Any("error", err))
 		return
@@ -125,6 +132,9 @@ func (a *API) EditIncident(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, util.ErrNotFound) {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
+		} else if errors.Is(err, util.ErrInvalid) {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
 		}
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		a.Logger.Error("error while editing incident", slog.Any("error", err))
@@ -140,6 +150,9 @@ func (a *API) DeleteIncident(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, util.ErrNotFound) {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		} else if errors.Is(err, util.ErrInvalid) {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -167,6 +180,10 @@ func (a *API) AddUpdate(w http.ResponseWriter, r *http.Request) {
 
 	id, err := a.Database.CreateUpdate(r.Context(), update)
 	if err != nil {
+		if errors.Is(err, util.ErrInvalid) {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		a.Logger.Error("error while creating update", slog.Any("error", err))
 		return
@@ -197,6 +214,9 @@ func (a *API) EditUpdate(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, util.ErrNotFound) {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
+		} else if errors.Is(err, util.ErrInvalid) {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
 		}
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		a.Logger.Error("error while editing update", slog.Any("error", err))
@@ -207,8 +227,11 @@ func (a *API) EditUpdate(w http.ResponseWriter, r *http.Request) {
 func (a *API) GetUpdate(w http.ResponseWriter, r *http.Request) {
 	update, err := a.Database.GetUpdate(r.Context(), chi.URLParam(r, "updateID"))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, util.ErrNotFound) {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		} else if errors.Is(err, util.ErrInvalid) {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -232,6 +255,9 @@ func (a *API) DeleteUpdate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, util.ErrNotFound) {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		} else if errors.Is(err, util.ErrInvalid) {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

@@ -1,29 +1,79 @@
 package util
 
 import (
+	"log/slog"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/uptrace/bun"
 )
 
-// a type representing possible internal events
-type EventType string
+/* Validation Helpers =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
+const sqidAlphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-const (
-	EventCreateIncident EventType = "create_incident"
-	EventCreateUpdate   EventType = "create_update"
-	EventEditIncident   EventType = "edit_incident"
-	EventEditUpdate     EventType = "edit_update"
-	EventDeleteIncident EventType = "delete_incident"
-	EventDeleteUpdate   EventType = "delete_update"
-)
+var Validate = validator.New()
 
-// helper struct for internal events
-type Event struct {
-	Type     EventType
-	Modified any
+func init() {
+	err := Validate.RegisterValidation("impact", validateImpact)
+	if err != nil {
+		slog.Error("error in init", slog.Any("error", err))
+		os.Exit(1)
+	}
+	err = Validate.RegisterValidation("incidentstatus", validateIncidentStatus)
+	if err != nil {
+		slog.Error("error in init", slog.Any("error", err))
+		os.Exit(1)
+	}
+	err = Validate.RegisterValidation("sqid", validateSqid)
+	if err != nil {
+		slog.Error("error in init", slog.Any("error", err))
+		os.Exit(1)
+	}
 }
+
+func validateSqid(fl validator.FieldLevel) bool {
+	id := fl.Field().String()
+	if len(id) < 8 {
+		return false
+	}
+	for _, char := range id {
+		if !strings.ContainsRune(sqidAlphabet, char) {
+			return false
+		}
+	}
+	return true
+}
+
+func validateImpact(fl validator.FieldLevel) bool {
+	if impact, ok := fl.Field().Interface().(Impact); ok {
+		return impact.IsValid()
+	}
+	if impact, ok := fl.Field().Interface().(*Impact); ok {
+		if impact == nil {
+			return true
+		}
+		return impact.IsValid()
+	}
+	return false
+}
+
+func validateIncidentStatus(fl validator.FieldLevel) bool {
+	if status, ok := fl.Field().Interface().(IncidentStatus); ok {
+		return status.IsValid()
+	}
+	if status, ok := fl.Field().Interface().(*IncidentStatus); ok {
+		if status == nil {
+			return true
+		}
+		return status.IsValid()
+	}
+	return false
+}
+
+/* Incidents + Status =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
 // a type representing the impact of an incident or event
 type Impact string
@@ -88,9 +138,9 @@ const (
 type IncidentUpdate struct {
 	bun.BaseModel `bun:"table:incident_updates,alias:upd"`
 
-	ID        string          `json:"id" bun:"id,pk"`
-	Text      string          `json:"text" bun:"text,notnull"`
-	Status    *IncidentStatus `json:"status,omitempty" bun:"status"`
+	ID        string          `json:"id" bun:"id,pk" validate:"required,sqid"`
+	Text      string          `json:"text" bun:"text,notnull" validate:"required,max=1800"`
+	Status    *IncidentStatus `json:"status,omitempty" bun:"status" validate:"omitempty,incidentstatus"`
 	Timestamp time.Time       `json:"timestamp" bun:"timestamp,notnull,default:current_timestamp"`
 
 	IncidentID string `json:"-" bun:"incident_id,notnull"`
@@ -98,7 +148,7 @@ type IncidentUpdate struct {
 
 // helper struct for update patching
 type UpdatePatch struct {
-	Text *string `json:"text"`
+	Text *string `json:"text" validate:"omitempty,required,max=1800"`
 }
 
 // render helper function for IncidentUpdate
@@ -108,24 +158,24 @@ func (i *IncidentUpdate) Render(w http.ResponseWriter, r *http.Request) error { 
 type Incident struct {
 	bun.BaseModel `bun:"table:incidents,alias:inc"`
 
-	ID                  string         `json:"id" bun:"id,pk"`
+	ID                  string         `json:"id" bun:"id,pk" validate:"required,sqid"`
 	Timestamp           time.Time      `json:"timestamp" bun:"timestamp,nullzero,notnull,default:current_timestamp"`
 	LastUpdate          time.Time      `json:"last_update" bun:"last_update,nullzero,notnull,default:current_timestamp"`
 	ResolutionTimestamp time.Time      `json:"resolution_timestamp" bun:"resolution_timestamp,nullzero"`
-	Status              IncidentStatus `json:"status" bun:"status"`
-	Impact              Impact         `json:"impact" bun:"impact"`
-	Name                string         `json:"name" bun:"name,notnull"`
-	Description         string         `json:"description" bun:"description"`
+	Status              IncidentStatus `json:"status" bun:"status" validate:"required,incidentstatus"`
+	Impact              Impact         `json:"impact" bun:"impact" validate:"required,impact"`
+	Name                string         `json:"name" bun:"name,notnull" validate:"required,max=100"`
+	Description         string         `json:"description" bun:"description" validate:"max=1800"`
 
-	Updates []*IncidentUpdate `json:"updates" bun:"rel:has-many,join:id=incident_id"`
+	Updates []*IncidentUpdate `json:"updates" bun:"rel:has-many,join:id=incident_id"  validate:"dive"`
 }
 
 // helper struct for incident patching
 type IncidentPatch struct {
-	Name        *string         `json:"name"`
-	Description *string         `json:"description"`
-	Status      *IncidentStatus `json:"status"`
-	Impact      *Impact         `json:"impact"`
+	Name        *string         `json:"name" validate:"max=100"`
+	Description *string         `json:"description" validate:"max=1800"`
+	Status      *IncidentStatus `json:"status" validate:"incidentstatus"`
+	Impact      *Impact         `json:"impact" validate:"impact"`
 }
 
 // render helper function for Incident
@@ -155,6 +205,25 @@ type StatusWrapper struct {
 	Status        Status `json:"status"`
 }
 
+/* Misc =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
+
+// a type representing possible internal events
+type EventType string
+
+const (
+	EventCreateIncident EventType = "create_incident"
+	EventCreateUpdate   EventType = "create_update"
+	EventEditIncident   EventType = "edit_incident"
+	EventEditUpdate     EventType = "edit_update"
+	EventDeleteIncident EventType = "delete_incident"
+	EventDeleteUpdate   EventType = "delete_update"
+)
+
+// helper struct for internal events
+type Event struct {
+	Type     EventType
+	Modified any
+}
 type WebhookMessage struct {
 	bun.BaseModel `bun:"table:webhook_messages,alias:msg"`
 

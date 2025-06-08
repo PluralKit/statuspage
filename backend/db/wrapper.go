@@ -174,6 +174,13 @@ func (d *DB) GetIncidents(ctx context.Context, ids []string) (util.IncidentList,
 		return list, nil
 	}
 
+	for _, id := range ids {
+		err := util.Validate.Var(id, "required,sqid")
+		if err != nil {
+			return list, util.ErrInvalid
+		}
+	}
+
 	incidents := make([]util.Incident, len(ids))
 	err := d.database.NewSelect().
 		Model(&incidents).
@@ -193,12 +200,20 @@ func (d *DB) GetIncidents(ctx context.Context, ids []string) (util.IncidentList,
 func (d *DB) GetIncident(ctx context.Context, id string) (util.Incident, error) {
 	incident := util.Incident{}
 
-	err := d.database.NewSelect().
+	err := util.Validate.Var(id, "required,sqid")
+	if err != nil {
+		return incident, util.ErrInvalid
+	}
+
+	err = d.database.NewSelect().
 		Model(&incident).
 		Relation("Updates").
 		Where("id = ?", id).
 		Scan(ctx)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return incident, util.ErrNotFound
+		}
 		return incident, err
 	}
 	return incident, nil
@@ -275,6 +290,11 @@ func (d *DB) CreateIncident(ctx context.Context, incident util.Incident) (string
 
 	incident.ID = sqid
 
+	err = util.Validate.Struct(incident)
+	if err != nil {
+		return "", util.ErrInvalid
+	}
+
 	_, err = d.database.NewInsert().
 		Model(&incident).
 		Returning("*").
@@ -292,6 +312,11 @@ func (d *DB) CreateIncident(ctx context.Context, incident util.Incident) (string
 }
 
 func (d *DB) EditIncident(ctx context.Context, id string, patch util.IncidentPatch) error {
+	err := util.Validate.Struct(patch)
+	if err != nil {
+		return util.ErrInvalid
+	}
+
 	// we use a map to patch because... that seems to be the easiest way?
 	patchMap := make(map[string]interface{})
 
@@ -332,6 +357,9 @@ func (d *DB) EditIncident(ctx context.Context, id string, patch util.IncidentPat
 		Where("id = ?", id).
 		Exec(ctx, &incident)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return util.ErrNotFound
+		}
 		return err
 	}
 
@@ -351,11 +379,19 @@ func (d *DB) EditIncident(ctx context.Context, id string, patch util.IncidentPat
 }
 
 func (d *DB) DeleteIncident(ctx context.Context, incident util.Incident) error {
+	err := util.Validate.Var(incident.ID, "required,sqid")
+	if err != nil {
+		return util.ErrInvalid
+	}
+
 	res, err := d.database.NewDelete().
 		Model(&incident).
 		WherePK().
 		Exec(ctx)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return util.ErrNotFound
+		}
 		return err
 	}
 
@@ -402,6 +438,11 @@ func (d *DB) CreateUpdate(ctx context.Context, update util.IncidentUpdate) (stri
 	}
 	update.ID = sqid
 
+	err = util.Validate.Struct(update)
+	if err != nil {
+		return "", util.ErrInvalid
+	}
+
 	_, err = d.database.NewInsert().
 		Model(&update).
 		Returning("*").
@@ -444,12 +485,20 @@ func (d *DB) CreateUpdate(ctx context.Context, update util.IncidentUpdate) (stri
 
 func (d *DB) GetUpdate(ctx context.Context, id string) (util.IncidentUpdate, error) {
 	update := util.IncidentUpdate{ID: id}
-	err := d.database.NewSelect().
+	err := util.Validate.Var(id, "required,sqid")
+	if err != nil {
+		return update, util.ErrInvalid
+	}
+
+	err = d.database.NewSelect().
 		Model(&update).
 		WherePK().
 		Limit(1).
 		Scan(ctx)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return update, util.ErrNotFound
+		}
 		return update, err
 	}
 
@@ -457,6 +506,11 @@ func (d *DB) GetUpdate(ctx context.Context, id string) (util.IncidentUpdate, err
 }
 
 func (d *DB) EditUpdate(ctx context.Context, id string, update util.UpdatePatch) error {
+	err := util.Validate.Struct(update)
+	if err != nil {
+		return util.ErrInvalid
+	}
+
 	patchMap := make(map[string]interface{})
 
 	if update.Text != nil {
@@ -475,6 +529,9 @@ func (d *DB) EditUpdate(ctx context.Context, id string, update util.UpdatePatch)
 		Where("id = ?", id).
 		Exec(ctx, &updated)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return util.ErrNotFound
+		}
 		return err
 	}
 
@@ -493,11 +550,19 @@ func (d *DB) EditUpdate(ctx context.Context, id string, update util.UpdatePatch)
 }
 
 func (d *DB) DeleteUpdate(ctx context.Context, update util.IncidentUpdate) error {
+	err := util.Validate.Var(update.ID, "required,sqid")
+	if err != nil {
+		return util.ErrInvalid
+	}
+
 	res, err := d.database.NewDelete().
 		Model(&update).
 		WherePK().
 		Exec(ctx)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return util.ErrNotFound
+		}
 		return err
 	}
 

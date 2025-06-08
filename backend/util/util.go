@@ -6,6 +6,7 @@ import (
 )
 
 var ErrNotFound = errors.New("resource not found")
+var ErrInvalid = errors.New("invalid struct/type data")
 
 type SlogLevel slog.Level
 

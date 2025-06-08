@@ -1,6 +1,6 @@
 #!/bin/sh
 
-url=http://localhost:80
+url=http://localhost:8080
 
 incidentA=$(cat << END
 {
@@ -12,11 +12,15 @@ incidentA=$(cat << END
 END
 )
 incidentA_updateA=$(cat << END
-uhhhh there's a fox in the servers biting on wires???
+{
+    "text": "uhhhh there's a fox in the servers biting on wires???"
+}
 END
 )
 incidentA_updateB=$(cat << END
-we have lured the fox out with a sandwich! working on repairing the wires now
+{
+    "text": "we have lured the fox out with a sandwich! working on repairing the wires now"
+}
 END
 )
 
@@ -27,6 +31,7 @@ incidentA_ID=$(curl --header "Content-Type: application/json" \
   --data "$incidentA" \
   "$url/api/v1/admin/incidents/create"
 )
+echo "$incidentA_ID"
 
 curl --header "Content-Type: application/json" \
   --header "Authorization: Bearer supersecuretoken" \

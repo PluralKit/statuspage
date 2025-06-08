@@ -7,6 +7,7 @@
     import { dateAgo } from '$lib/util';
 
     import { marked } from 'marked';
+    import { Render } from 'svelte-purify/browser-only'
 
     function toggleIncidentDetails(id: string){
         shownIncidentDetails.set(id, !shownIncidentDetails.get(id));
@@ -126,7 +127,13 @@
                                 </div>
                             </div>
                         </h2>
-                        <span class=" flex flex-col gap-4 text-left text-sm">{@html marked(incident.description)}</span>
+                        <span class=" flex flex-col gap-4 text-left text-sm">
+                            {#await marked(incident.description)}
+                                <p>loading...</p>
+                            {:then html}
+                                <Render html={html} />
+                            {/await}
+                        </span>
                         {#if shownIncidentDetails.get(incident.id) && incident.updates && incident.updates.length > 0}
                             <div transition:slide="{{duration: 250}}">
                                 <div class="divider"></div>
@@ -134,7 +141,13 @@
                                     {#each incident.updates as update}
                                     <li>
                                         <div class="timeline-start">{dateAgo(update.timestamp)}</div>
-                                        <div class="timeline-end timeline-box flex flex-col gap-4 p-4 text-left text-sm">{@html marked(update.text)}</div>
+                                        <div class="timeline-end timeline-box flex flex-col gap-4 p-4 text-left text-sm">
+                                            {#await marked(update.text)}
+                                                <p>loading...</p>
+                                            {:then html}
+                                                <Render html={html} />
+                                            {/await}
+                                        </div>
                                     </li>
                                     {/each}
                                 </ul>
