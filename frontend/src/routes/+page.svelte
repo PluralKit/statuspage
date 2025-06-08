@@ -13,6 +13,9 @@
 
 <svelte:head>
 	<title>PluralKit Status</title>
+    <meta property="og:title" content="PluralKit Status" />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#DA9317">
 </svelte:head>
 
 <div class="w-full justify-center p-4">
