@@ -32,6 +32,6 @@ type Config struct {
 	NotificationWebhook string    `env:"pluralkit__status__notification_webhook"`
 	NotificationRole    string    `env:"pluralkit__status__notification_role"`
 	RunDev              bool      `env:"pluralkit__status__run_dev" envDefault:"false"`
-	DBLoc               string    `env:"pluralkit__status__db_location" envDefault:"file:status.db"`
+	DBLoc               string    `env:"pluralkit__status__db_location" envDefault:"file:status.db?_foreign_keys=on"`
 	LogLevel            SlogLevel `env:"pluralkit__consoleloglevel" envDefault:"info"`
 }

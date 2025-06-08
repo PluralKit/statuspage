@@ -403,16 +403,6 @@ func (d *DB) DeleteIncident(ctx context.Context, incident util.Incident) error {
 		return util.ErrNotFound
 	}
 
-	//for some reason this doesn't wanna cascade delete soooo
-	//just in case
-	_, err = d.database.NewDelete().
-		Table("incident_updates").
-		Where("incident_id = ?", incident.ID).
-		Exec(ctx)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
