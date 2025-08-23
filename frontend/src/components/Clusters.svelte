@@ -41,7 +41,7 @@
             shards.sort((a, b) => a.shard_id - b.shard_id);
 
             shards.forEach((s) => {
-                if(!clusters[s.cluster_id]) clusters[s.cluster_id] = <Cluster>{cluster_id: s.cluster_id, avg_latency: 0, up: true, status: "healthy", shards: []};
+                if(!clusters[s.cluster_id]) clusters[s.cluster_id] = <Cluster>{cluster_id: s.cluster_id, avg_latency: 0, up: true, shards_down: 0, status: "healthy", shards: []};
                 clusters[s.cluster_id].shards.push(s);
                 if(s.up){
                     shards_up++;
@@ -51,12 +51,16 @@
             shards_total = shards.length;
             avg_latency = Math.floor(avg_latency/shards_up);
             
+            const fiveMinsAgo = Date.now() - (5*60*1000);
             clusters.forEach((c)=>{
                 let l = 0;
                 c.shards.forEach((s)=>{
                     l+=s.latency;
                     
-                    if(!s.up) s.status = "down";
+                    if(!s.up || s.last_heartbeat.getTime() < fiveMinsAgo) { 
+                        s.status = "down";
+                        c.shards_down++;
+                    }
                     else if (s.latency < 300) s.status = "healthy";
                     else if (s.latency < 600) s.status = "degraded";
                     else s.status = "severe";
@@ -161,6 +165,9 @@
             <div class="cluster-ctr flex flex-wrap flex-row py-6 justify-start">
                 {#each clusters as cluster}
                 <button class="cluster aspect-square tooltip indicator {cluster.status}" on:click={()=>{showClusterHandler(cluster.cluster_id)}}>
+                    {#if cluster.shards_down > 0}
+                        <span class="indicator-item status status-error"></span>
+                    {/if}
                     {cluster.cluster_id}
                     <div class="tooltip-content">
                         avg latency: {cluster.avg_latency}

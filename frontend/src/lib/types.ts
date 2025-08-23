@@ -12,6 +12,7 @@ export interface Cluster {
   cluster_id: number;
   avg_latency: number;
   up: boolean;
+  shards_down: number;
   status: string;
   shards: Shard[];
 }
