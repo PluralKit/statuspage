@@ -28,6 +28,7 @@ func (l *SlogLevel) UnmarshalText(text []byte) error {
 
 type Config struct {
 	BindAddr            string    `env:"pluralkit__status__addr" envDefault:"0.0.0.0:8080"`
+	ShardsEndpoint      string    `env:"pluralkit__status__shards_endpoint" envDefault:"https://api.pluralkit.me/private/discord/shard_state"`
 	AuthToken           string    `env:"pluralkit__status__auth_token"`
 	NotificationWebhook string    `env:"pluralkit__status__notification_webhook"`
 	NotificationRole    string    `env:"pluralkit__status__notification_role"`

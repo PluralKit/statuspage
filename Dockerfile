@@ -1,5 +1,3 @@
-ARG PUBLIC_API_URL="https://status.pluralkit.me"
-
 FROM alpine:latest AS build
 
 RUN apk add nodejs npm go git make
@@ -10,8 +8,6 @@ COPY Makefile /build/
 COPY .git/ /build/.git
 
 WORKDIR /build
-ARG PUBLIC_API_URL
-ENV PUBLIC_API_URL=$PUBLIC_API_URL
 RUN make
 
 FROM caddy:2.10 AS caddy

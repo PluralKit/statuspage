@@ -1,6 +1,7 @@
 #!/bin/sh
 
-url=http://localhost:8080
+url=http://localhost:80
+
 
 incidentA=$(cat << END
 {
@@ -25,7 +26,7 @@ END
 )
 
 incidentA_ID=$(curl --header "Content-Type: application/json" \
-  --header "Authorization: Bearer supersecuretoken" \
+  --header "Authorization: Bearer $token" \
   --silent \
   --request POST \
   --data "$incidentA" \
@@ -34,14 +35,14 @@ incidentA_ID=$(curl --header "Content-Type: application/json" \
 echo "$incidentA_ID"
 
 curl --header "Content-Type: application/json" \
-  --header "Authorization: Bearer supersecuretoken" \
+  --header "Authorization: Bearer $token" \
   --silent \
   --request POST \
   --data "$incidentA_updateA" \
   "$url/api/v1/admin/incidents/$incidentA_ID/update"
 
 curl --header "Content-Type: application/json" \
-  --header "Authorization: Bearer supersecuretoken" \
+  --header "Authorization: Bearer $token" \
   --silent \
   --request POST \
   --data "$incidentA_updateB" \

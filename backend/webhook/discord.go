@@ -105,7 +105,7 @@ func (dw *DiscordWebhook) genIncidentMessage(incident util.Incident) Message {
 					},
 					{
 						Type:    int(TextDisplay),
-						Content: fmt.Sprintf("# %s\n-# **status:** *%s*\t**impact:** *%s*", incident.Name, incident.Status, incident.Impact),
+						Content: fmt.Sprintf("## %s\n-# **status:** *%s*\t**impact:** *%s*", incident.Name, incident.Status, incident.Impact),
 					},
 					{
 						Type:    int(Seperator),
@@ -140,9 +140,9 @@ func (dw *DiscordWebhook) genUpdateMessage(incident util.Incident, update util.I
 			Roles: []string{dw.notifRole},
 		}
 	}
-	nameText := fmt.Sprintf("# update: %s", incident.Name)
+	nameText := fmt.Sprintf("## update: %s", incident.Name)
 	if update.Status != nil {
-		nameText = fmt.Sprintf("# update: %s\n-# **status:** *%s*", incident.Name, incident.Status)
+		nameText = fmt.Sprintf("## update: %s\n-# **status:** *%s*", incident.Name, incident.Status)
 	}
 	color := 0
 	switch incident.Impact {

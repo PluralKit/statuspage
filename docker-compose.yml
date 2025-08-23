@@ -3,8 +3,6 @@ services:
     build:
       context: .
       target: backend
-      args:
-        - PUBLIC_API_URL=""
     volumes:
     - "data:/app/data"
     environment:

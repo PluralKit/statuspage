@@ -11,17 +11,19 @@ import (
 )
 
 type API struct {
-	Config   util.Config
-	Logger   *slog.Logger
-	Database *db.DB
+	Config     util.Config
+	Logger     *slog.Logger
+	Database   *db.DB
+	httpClient http.Client
 }
 
 func NewAPI(config util.Config, logger *slog.Logger, database *db.DB) *API {
 	moduleLogger := logger.With(slog.String("module", "API"))
 	return &API{
-		Config:   config,
-		Logger:   moduleLogger,
-		Database: database,
+		Config:     config,
+		Logger:     moduleLogger,
+		Database:   database,
+		httpClient: http.Client{},
 	}
 }
 
@@ -54,6 +56,7 @@ func (a *API) SetupRoutes(router *chi.Mux) {
 	router.Route("/api/v1", func(r chi.Router) {
 
 		r.Get("/status", a.GetStatus)
+		r.Get("/shards", a.GetShardStatus)
 
 		r.Route("/incidents", func(r chi.Router) {
 			r.Get("/", a.GetIncidents)

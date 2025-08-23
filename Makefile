@@ -18,5 +18,5 @@ clean:
 dev: backend
 	export $(xargs < .env)
 	rm -rf build/srv/* && mkdir -p build build/srv
-	cd frontend && npm install && PUBLIC_API_URL="http://localhost:8080" npm run build && mv -f build/* ../build/srv
+	cd frontend && npm install && npm run build && mv -f build/* ../build/srv
 	cd build && pluralkit__status__run_dev=true ./status

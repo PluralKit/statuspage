@@ -45,6 +45,4 @@ type Config struct {
 
 ### Frontend:
 ```
-PUBLIC_API_URL="http://status.pluralkit.me"
-PUBLIC_SHARD_URL="https://api.pluralkit.me/private/discord/shard_state"
 ```
