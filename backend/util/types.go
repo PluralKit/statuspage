@@ -109,6 +109,7 @@ func (i Impact) IsValid() bool {
 type IncidentStatus string
 
 const (
+	StatusMaintenance   IncidentStatus = "maintenance"
 	StatusInvestigating IncidentStatus = "investigating"
 	StatusIdentified    IncidentStatus = "identified"
 	StatusMonitoring    IncidentStatus = "monitoring"
@@ -118,7 +119,7 @@ const (
 // helper function for validating IncidentStatus
 func (i IncidentStatus) IsValid() bool {
 	switch i {
-	case StatusInvestigating, StatusIdentified, StatusMonitoring, StatusResolved:
+	case StatusMaintenance, StatusInvestigating, StatusIdentified, StatusMonitoring, StatusResolved:
 		return true
 	default:
 		return false
