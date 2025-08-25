@@ -18,6 +18,7 @@
               pkgs.gnumake
               pkgs.go
               pkgs.nodejs_24
+              pkgs.golangci-lint
             ];
           };
         }
