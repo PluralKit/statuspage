@@ -210,12 +210,16 @@ func (a *API) EditUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var update util.UpdatePatch
+	var updatePatch util.UpdatePatch
 	id := chi.URLParam(r, "updateID")
-	str := string(data)
-	update.Text = &str
+	err = json.Unmarshal(data, &updatePatch)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		a.Logger.Error("error while parsing update data", slog.Any("error", err))
+		return
+	}
 
-	err = a.Database.EditUpdate(r.Context(), id, update)
+	err = a.Database.EditUpdate(r.Context(), id, updatePatch)
 	if err != nil {
 		if errors.Is(err, util.ErrNotFound) {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)

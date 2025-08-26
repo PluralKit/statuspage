@@ -269,8 +269,10 @@ func TestAddUpdate(t *testing.T) {
 	incidentID, err := dbInstance.CreateIncident(ctx, util.Incident{Name: "incident", Status: util.StatusInvestigating, Impact: util.ImpactMinor})
 	require.NoError(t, err)
 
+	status := util.StatusInvestigating
 	updateData := util.IncidentUpdate{
-		Text: "update",
+		Text:   "update",
+		Status: &status,
 	}
 	body, _ := json.Marshal(updateData)
 
@@ -298,6 +300,7 @@ func TestAddUpdate(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, updatedInc.Updates, 1)
 		assert.Equal(t, "update", updatedInc.Updates[0].Text)
+		assert.Equal(t, util.StatusInvestigating, *updatedInc.Updates[0].Status)
 	})
 }
 
@@ -308,12 +311,15 @@ func TestEditUpdate(t *testing.T) {
 	ctx := context.Background()
 	incidentID, err := dbInstance.CreateIncident(ctx, util.Incident{Name: "incident", Status: util.StatusInvestigating, Impact: util.ImpactMinor})
 	require.NoError(t, err)
-	updateID, err := dbInstance.CreateUpdate(ctx, util.IncidentUpdate{IncidentID: incidentID, Text: "not updated update"})
+	status := util.StatusInvestigating
+	updateID, err := dbInstance.CreateUpdate(ctx, util.IncidentUpdate{IncidentID: incidentID, Text: "not updated update", Status: &status})
 	require.NoError(t, err)
 
 	text := "updated update"
+	newStatus := util.StatusIdentified
 	patch := util.UpdatePatch{
-		Text: &text,
+		Text:   &text,
+		Status: &newStatus,
 	}
 	body, _ := json.Marshal(patch)
 
@@ -336,7 +342,8 @@ func TestEditUpdate(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rr.Code)
 		editedUpdate, err := dbInstance.GetUpdate(ctx, updateID)
 		require.NoError(t, err)
-		assert.Equal(t, "{\"text\":\"updated update\"}", editedUpdate.Text)
+		assert.Equal(t, "updated update", editedUpdate.Text)
+		assert.Equal(t, util.StatusIdentified, *editedUpdate.Status)
 	})
 }
 

@@ -512,6 +512,8 @@ func (d *DB) EditUpdate(ctx context.Context, id string, update util.UpdatePatch)
 
 	if update.Text != nil {
 		patchMap["text"] = *update.Text
+	}
+	if update.Status != nil {
 		patchMap["status"] = *update.Status
 	}
 
