@@ -2,7 +2,7 @@ Status page for [PluralKit](https://github.com/PluralKit/PluralKit) built with S
 
 This application is designed to be run behind a proxy of some kind (see provided Caddyfile), with the static frontend files served by the proxy (alternatively, frontend files could be served using any http server, such as GitHub Pages or Cloudflare Pages).
 
-The frontend is seperated from the backend, pulling status information from a publicly accessible API url, without which it will still function as a shard status page (provided the shard status url is correctly set).
+The frontend is seperated from the backend, pulling status information from a publicly accessible API url.
 
 Incidents can be created using the HTTP api with an auth token (currently simple auth specified by an environment variable). Data is stored in an SQLite3 file `status.db`, but can theoretically be updated to use other databases supported by [Bun](https://bun.uptrace.dev/).
 
