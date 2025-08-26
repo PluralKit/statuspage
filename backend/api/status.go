@@ -52,12 +52,15 @@ func (a *API) GetShardStatus(w http.ResponseWriter, r *http.Request) {
 		a.Logger.Error("non 200 when getting shard status")
 		return
 	}
-	defer resp.Body.Close()
 
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
 		http.Error(w, "error while copying response", 500)
 		a.Logger.Error("error while copying response", slog.Any("error", err))
 		return
+	}
+	err = resp.Body.Close()
+	if err != nil {
+		a.Logger.Error("error while closing body", slog.Any("error", err))
 	}
 }

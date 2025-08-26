@@ -149,7 +149,8 @@ type IncidentUpdate struct {
 
 // helper struct for update patching
 type UpdatePatch struct {
-	Text *string `json:"text" validate:"omitempty,required,max=1800"`
+	Text   *string `json:"text" validate:"omitempty,required,max=1800"`
+	Status *string `json:"status" validate:"omitempty,incidentstatus"`
 }
 
 // render helper function for IncidentUpdate
