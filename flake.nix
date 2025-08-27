@@ -28,7 +28,7 @@
           version = self.shortRev or "dirty";
           src = ./frontend;
 
-          npmDepsHash = "sha256-5UfeBqKUgls4gT6eL384tsEEuByZT5gO3xpymDo+K/o=";
+          npmDepsHash = "sha256-IGk6+vY6xZUV4j/FQAF4umbG0vmzveUTMV9BmGQCHwE=";
           npmBuildCommand = "run build";
           installPhase = ''
             runHook preInstall
