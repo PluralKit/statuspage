@@ -2,7 +2,7 @@
     <div class="flex-1 pl-2 navbar-start">
         <div class="pr-4 avatar">
             <div class="w-12 rounded">
-              <img alt="An icon of myriad looking down and writing on a notepad" src="myriad_write.png" />
+              <img alt="An icon of myriad looking down and writing on a notepad" src="myriad_write.webp" />
             </div>
         </div>
         <h1 class="text-2xl">PluralKit Status</h1>

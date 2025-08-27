@@ -103,15 +103,17 @@
 
 
 
-{#if status}
+
 <div class="card">
-    <div role="alert" class="alert {statusClass} flex flex-col items-start gap-1">
+    <div role="alert" class="alert {statusClass} flex flex-col items-start gap-1 h-28">
+        {#if status}
         <span class="text-lg font-bold">{statusText}</span>
         <span class="text-md">{statusInfoText}</span>
         <span class="text-xs italic pt-2">Last refreshed status at {status.timestamp.toLocaleTimeString()}</span>
+        {/if}
     </div>
 
-    {#if status.active_incidents.length > 0 && !error}
+    {#if status && status.active_incidents.length > 0 && !error}
         <div class="w-full flex flex-col gap-4 py-4" role="region" aria-label="Active incidents">
             {#each active_incidents as incident}
                 {@const impact_class = incident.impact == "none" ? "badge-neutral" : incident?.impact == "minor" ? "badge-warning" : "badge-error"}
@@ -168,7 +170,6 @@
         </div>
     {/if}
 </div>
-{/if}
 
 <style>
     .incident {
