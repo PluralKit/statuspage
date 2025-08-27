@@ -6,15 +6,25 @@ import (
 	"pluralkit/status/db"
 	"pluralkit/status/util"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
+
+type cacheEntry struct {
+	data      []byte
+	timestamp time.Time
+}
 
 type API struct {
 	Config     util.Config
 	Logger     *slog.Logger
 	Database   *db.DB
 	httpClient http.Client
+
+	cache      map[string]cacheEntry
+	cacheMutex sync.RWMutex
 }
 
 func NewAPI(config util.Config, logger *slog.Logger, database *db.DB) *API {
@@ -24,6 +34,7 @@ func NewAPI(config util.Config, logger *slog.Logger, database *db.DB) *API {
 		Logger:     moduleLogger,
 		Database:   database,
 		httpClient: http.Client{},
+		cache:      make(map[string]cacheEntry),
 	}
 }
 
