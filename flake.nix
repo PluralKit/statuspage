@@ -30,6 +30,9 @@
 
           npmDepsHash = "sha256-IGk6+vY6xZUV4j/FQAF4umbG0vmzveUTMV9BmGQCHwE=";
           npmBuildCommand = "run build";
+          env = {
+            GIT_COMMIT = self.shortRev or "dirty";
+          };
           installPhase = ''
             runHook preInstall
             cp -r build $out
