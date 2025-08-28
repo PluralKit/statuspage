@@ -3,13 +3,9 @@
     import { slide } from 'svelte/transition';
     
     import { dateAgo, getShardID } from '$lib/util';
-    import { type Cluster, type Shard } from '$lib/types';
+    import { type Cluster, type ClustersWrapper, type Shard } from '$lib/types';
 
-    let clusters: Cluster[] = [];
-    let shards_up = 0;
-    let shards_total = 0;
-    let avg_latency = 0;
-    let max_concurrency = 16;
+    let clustersInfo: ClustersWrapper;
     let error: any = undefined;
 
     //kinda a janky fix for closing, but whatevs it'll work for now
@@ -18,122 +14,97 @@
         if(clicked === null || ! clicked.tagName) return;
         if(clicked.tagName !== 'BUTTON' && clicked.tagName !== 'INPUT' && clicked.tagName !== 'A' 
             && !clicked.classList.contains("cluster") && !clicked.classList.contains("shard") && !clicked.classList.contains("btn")){
-            if(!findCluster) showCluster = false;
+            if(!findCluster) shownCluster = undefined;
         }
     }
 
     onMount(async () => {
         try {
-            const response = await fetch("/api/v1/shards");
-            const data = await response.json();
-
-            let shards: Shard[] = data.shards.map((item: any) => {
-                return {
-                    shard_id: item.shard_id,
-                    cluster_id: item.cluster_id,
-                    up: item.up,
-                    latency: item.latency,
-                    last_heartbeat: new Date(item.last_heartbeat * 1000),
-                    last_connection: new Date(item.last_connection * 1000),
-                } as Shard;
+            const response = await fetch("/api/v1/clusters");
+            const data = await response.json() as ClustersWrapper;
+            clustersInfo = data
+            if (!clustersInfo.clusters) {
+                throw new Error("clusters is undefined")
+            }
+            clustersInfo.clusters.forEach((cluster, i) => {
+                if (!cluster.up) cluster.status = "down";
+                else if (cluster.avg_latency < 200) cluster.status = "healthy";
+                else if (cluster.avg_latency < 400) cluster.status = "degraded";
+                else cluster.status = "severe";
+                cluster.id = i
             });
-
-            shards.sort((a, b) => a.shard_id - b.shard_id);
-
-            shards.forEach((s) => {
-                if(!clusters[s.cluster_id]) clusters[s.cluster_id] = <Cluster>{cluster_id: s.cluster_id, avg_latency: 0, up: true, shards_down: 0, status: "healthy", shards: []};
-                clusters[s.cluster_id].shards.push(s);
-                if(s.up){
-                    shards_up++;
-                    avg_latency += s.latency;
-                }
-            });
-            shards_total = shards.length;
-            avg_latency = Math.floor(avg_latency/shards_up);
-            
-            const fiveMinsAgo = Date.now() - (5*60*1000);
-            clusters.forEach((c)=>{
-                let l = 0;
-                c.shards.forEach((s)=>{
-                    l+=s.latency;
-                    
-                    if(!s.up || s.last_heartbeat.getTime() < fiveMinsAgo) { 
-                        s.status = "down";
-                        c.shards_down++;
-                    }
-                    else if (s.latency < 300) s.status = "healthy";
-                    else if (s.latency < 600) s.status = "degraded";
-                    else s.status = "severe";
-                })
-                c.avg_latency = Math.floor(l/c.shards.length);
-                
-                if(!c.up) c.status = "down";
-                else if (c.avg_latency < 300) c.status = "healthy";
-                else if (c.avg_latency < 600) c.status = "degraded";
-                else c.status = "severe";
-            })
-
-            max_concurrency = clusters[0].shards.length;
         } catch (e) {
             error = e;
             console.error(e);
         }
     });
 
+    async function getShards(clusterID: number) {
+        try {
+            if (!clustersInfo.clusters) return
+            let cluster = clustersInfo.clusters[clusterID]
+            const response = await fetch(`/api/v1/clusters/${clusterID}`);
+            const data = await response.json() as Shard[];
+            cluster.shards = data
+
+            cluster.shards.forEach(shard => {
+                if (!shard.up) shard.status = "down"
+                else if (shard.latency < 200) shard.status = "healthy"
+                else if (shard.latency < 400) shard.status = "degraded"
+                else shard.status = "severe"
+            });
+            clustersInfo.clusters[clusterID] = cluster
+        } catch (e) {
+            error = e;
+            console.error(e);
+        }
+    }
+
     let findClusterInput = "";
     let findClusterErr = "";
-    let shownCluster: Cluster;
+    let shownCluster: Cluster | undefined;
     let shownShardID: number;
-    let showCluster = false;
     let findCluster = false;
 
-    //TODO: clean this up hehe, better validation?
-    function clusterInfoHandler() {
+    async function clusterInfoHandler() {
         if(findClusterInput == "") {
-            showCluster = false;
             findCluster = false;
             findClusterErr = "";
-            shownCluster = null as any;
+            shownCluster = undefined;
             shownShardID = -1;
             return;
         }
 
-        var match = findClusterInput.match(/https:\/\/(?:[\w]*\.)?discord(?:app)?\.com\/channels\/(\d+)\/\d+\/\d+/);
-        if(match != null) {
-            let shardID = getShardID(match[1], shards_total);
-            if (shardID != -1){
-                shownShardID = Number(shardID);
-                shownCluster = clusters[Math.floor(shownShardID / max_concurrency)];
-                showCluster = true;
-                findCluster = true;
-                findClusterErr = "";
-                return;
-            }
-        }
-
         try {
-            var shardID = getShardID(findClusterInput, shards_total);
-            if(shardID == -1 || !shardID) throw new Error();
-            shownShardID = Number(shardID);
-            shownCluster = clusters[Math.floor(shownShardID / max_concurrency)];
-            showCluster = true;
-            findCluster = true;
-            findClusterErr = "";
-            return;
+            var match = findClusterInput.match(/^(?:https:\/\/(?:[\w]*\.)?discord(?:app)?\.com\/channels\/)?(\d+)(?:\/\d+\/\d+)?$/);
+            if(match != null) {
+                if (!match[1]) throw new Error();
+                let shardID = getShardID(match[1], clustersInfo.num_shards);
+                let clusterID = Math.floor(shardID / clustersInfo.max_concurrency);
+                if (shardID != -1 && clustersInfo.clusters){
+                    await getShards(clusterID)
+                    shownShardID = Number(shardID);
+                    shownCluster = clustersInfo.clusters[clusterID];
+                    findCluster = true;
+                    findClusterErr = "";
+                    return;
+                }
+            }
         } catch(e) {
-            showCluster = false;
+            shownCluster = undefined;
             findCluster = false;
             findClusterErr = "Invalid server ID";
         }
     }
-    function showClusterHandler(id: number) {
-        if(showCluster && id === shownCluster.cluster_id) {
-            showCluster = false;
-        } else {
+
+    async function showClusterHandler(id: number) {
+        if(shownCluster && id === shownCluster.id) {
+            shownCluster = undefined;
+        } else if (clustersInfo.clusters){
+            await getShards(id)
             findClusterInput = "";
             findCluster = false;
-            shownCluster = clusters[id];
-            showCluster = true;
+            shownCluster = clustersInfo.clusters[id];
         }
     }
 </script>
@@ -154,42 +125,45 @@
         <div class="stats bg-base-100 shadow stats-vertical sm:stats-horizontal" role="region" aria-label="Overall statistics">
             <div class="stat">
               <div class="stat-title">Shards Up</div>
-              <div class="stat-value">{shards_up} / {shards_total}</div>
+               <div class="stat-value">{#if clustersInfo}{clustersInfo?.shards_up} / {clustersInfo?.num_shards}{/if}</div> 
             </div>
             <div class="stat">
                 <div class="stat-title"> Average Latency</div>
-                <div class="stat-value">{avg_latency} ms</div>
+                <div class="stat-value">{#if clustersInfo}{clustersInfo?.avg_latency} ms{/if}</div>
             </div>
         </div>
         <div class="flex flex-col items-center w-full" role="region" aria-label="Cluster status">
             <div class="cluster-ctr flex flex-wrap flex-row py-6 justify-start">
-                {#each clusters as cluster}
-                <button class="cluster aspect-square tooltip indicator {cluster.status}" on:click={()=>{showClusterHandler(cluster.cluster_id)}}>
-                    {#if cluster.shards_down > 0}
+                {#if clustersInfo?.clusters}
+                {#each clustersInfo.clusters as cluster}
+                <button class="cluster aspect-square tooltip indicator {cluster.status}" on:click={()=>{showClusterHandler(cluster.id)}}>
+                    {#if cluster.shards_up < clustersInfo.max_concurrency}
                         <span class="indicator-item status status-error"></span>
                     {/if}
-                    {cluster.cluster_id}
+                    {cluster.id}
                     <div class="tooltip-content">
                         avg latency: {cluster.avg_latency}
                     </div>
                 </button>
                 {/each}
+                {/if}
             </div>
         </div>
 
-        {#if showCluster}
+        {#if shownCluster}
         <div class="card bg-base-100 py-8 px-2" transition:slide="{{duration: 250}}" role="region" aria-label="Current shown cluster" >
-            <span class="text-center">Cluster {shownCluster.cluster_id} Shards:</span>
+            <span class="text-center">Cluster {shownCluster.id} Shards:</span>
             <div class="flex flex-row flex-wrap gap-2 p-4 justify-center">
-                {#each shownCluster.shards as shard}
+                {#each shownCluster?.shards || [] as shard}
                 <div class="shard aspect-square p-2 tooltip indicator {shard.status}">
                     {#if shard.shard_id == shownShardID && findCluster} <span class="indicator-item status status-info status-lg"></span> {/if}
                     {shard.shard_id}
                     <div class="tooltip-content flex flex-col">
                         <span>up: {shard.up}</span>
                         <span>latency: {shard.latency}</span>
-                        <span>last heartbeat: {dateAgo(shard.last_heartbeat)}</span>
                         <span>last connection: {dateAgo(shard.last_connection)}</span>
+                        <span>last heartbeat: {dateAgo(shard.last_heartbeat)}</span>
+                        <span>last reconnect: {dateAgo(shard.last_reconnect)}</span>
                     </div>
                 </div>
                 {/each}
@@ -206,8 +180,8 @@
             {#if findClusterErr != ""}
                 <span class="text-sm text-error">{findClusterErr}</span>
             {/if}
-            {#if findClusterInput != "" && findClusterErr == "" && showCluster}
-                <span class="text-md text-info pt-4">You are on cluster {shownCluster.cluster_id}, shard {shownShardID}!</span>
+            {#if findClusterInput != "" && findClusterErr == "" && shownCluster}
+                <span class="text-md text-info pt-4">You are on cluster {shownCluster.id}, shard {shownShardID}!</span>
             {/if}
         </div>
     </div>

@@ -1,6 +1,8 @@
 package api
 
 import (
+	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"pluralkit/status/db"
@@ -12,9 +14,50 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type cacheEntry struct {
-	data      []byte
-	timestamp time.Time
+type UnixTime struct {
+	time.Time
+}
+
+func (u *UnixTime) UnmarshalJSON(b []byte) error {
+	var timestamp int64
+	err := json.Unmarshal(b, &timestamp)
+	if err != nil {
+		return err
+	}
+	u.Time = time.Unix(timestamp, 0)
+	return nil
+}
+func (u UnixTime) MarshalJSON() ([]byte, error) {
+	if u.Time.IsZero() {
+		return []byte("0"), nil
+	}
+	return []byte(fmt.Sprintf("%d", u.Time.Unix())), nil
+}
+
+type Shard struct {
+	ShardID            int      `json:"shard_id"`
+	ClusterID          int      `json:"cluster_id"`
+	Up                 bool     `json:"up"`
+	DisconnectionCount int      `json:"disconnection_count"`
+	Latency            int      `json:"latency"`
+	LastHeartbeat      UnixTime `json:"last_heartbeat"`
+	LastConnection     UnixTime `json:"last_connection"`
+	LastReconnect      UnixTime `json:"last_reconnect"`
+}
+
+type Cluster struct {
+	AvgLatency int     `json:"avg_latency"`
+	ShardsUp   int     `json:"shards_up"`
+	Shards     []Shard `json:"-"`
+	Up         bool    `json:"up"`
+}
+
+type ClustersInfo struct {
+	AvgLatency     int        `json:"avg_latency"`
+	MaxConcurrency int        `json:"max_concurrency"`
+	NumShards      int        `json:"num_shards"`
+	ShardsUp       int        `json:"shards_up"`
+	Clusters       []*Cluster `json:"clusters"`
 }
 
 type API struct {
@@ -23,8 +66,9 @@ type API struct {
 	Database   *db.DB
 	httpClient http.Client
 
-	cache      map[string]cacheEntry
-	cacheMutex sync.RWMutex
+	clustersCache  ClustersInfo
+	cacheTimestamp time.Time
+	cacheMutex     sync.RWMutex
 }
 
 func NewAPI(config util.Config, logger *slog.Logger, database *db.DB) *API {
@@ -33,8 +77,11 @@ func NewAPI(config util.Config, logger *slog.Logger, database *db.DB) *API {
 		Config:     config,
 		Logger:     moduleLogger,
 		Database:   database,
-		httpClient: http.Client{},
-		cache:      make(map[string]cacheEntry),
+		httpClient: http.Client{Timeout: 10 * time.Second},
+		clustersCache: ClustersInfo{
+			Clusters:       make([]*Cluster, 0),
+			MaxConcurrency: config.MaxConcurrency,
+		},
 	}
 }
 
@@ -67,7 +114,11 @@ func (a *API) SetupRoutes(router *chi.Mux) {
 	router.Route("/api/v1", func(r chi.Router) {
 
 		r.Get("/status", a.GetStatus)
-		r.Get("/shards", a.GetShardStatus)
+
+		r.Route("/clusters", func(r chi.Router) {
+			r.Get("/", a.GetClusters)
+			r.Get("/{clusterID}", a.GetShards)
+		})
 
 		r.Route("/incidents", func(r chi.Router) {
 			r.Get("/", a.GetIncidents)

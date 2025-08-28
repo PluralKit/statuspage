@@ -1,20 +1,33 @@
 export interface Shard {
   shard_id: number;
-  cluster_id: number;
   up: boolean;
   status: string;
   latency: number;
-  last_heartbeat: Date;
-  last_connection: Date;
+  last_heartbeat: number;
+  last_connection: number;
+  last_reconnect: number;
 }
 
 export interface Cluster {
-  cluster_id: number;
   avg_latency: number;
+  id: number;
+  shards_up: number;
   up: boolean;
-  shards_down: number;
   status: string;
-  shards: Shard[];
+  shards: Shard[] | undefined;
+}
+
+export interface ClustersWrapper {
+  avg_latency: number;
+  max_concurrency: number;
+  num_shards: number;
+  shards_up: number;
+  clusters: Cluster[] | undefined;
+}
+
+export interface ShardsWrapper {
+  cluster_id: number;
+  shards: Map<number, Shard>;
 }
 
 export interface IncidentUpdate {
