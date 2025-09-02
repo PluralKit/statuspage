@@ -28,10 +28,10 @@ func (u *UnixTime) UnmarshalJSON(b []byte) error {
 	return nil
 }
 func (u UnixTime) MarshalJSON() ([]byte, error) {
-	if u.Time.IsZero() {
+	if u.Time.IsZero() { //nolint:all
 		return []byte("0"), nil
 	}
-	return []byte(fmt.Sprintf("%d", u.Time.Unix())), nil
+	return []byte(fmt.Sprintf("%d", u.Time.Unix())), nil //nolint:all
 }
 
 type Shard struct {
