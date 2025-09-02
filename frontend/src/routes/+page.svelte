@@ -14,6 +14,9 @@
 <svelte:head>
 	<title>PluralKit Status</title>
     <meta property="og:title" content="PluralKit Status" />
+    <meta name="description" content="The status page for PluralKit -- shard and incident information.">
+    <meta property="og:description" content="The status page for PluralKit -- shard and incident information.">
+    <meta property="og:url" content="https://status.pluralkit.me">
     <meta property="og:type" content="website" />
     <meta name="theme-color" content="#DA9317">
 </svelte:head>
