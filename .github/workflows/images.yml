@@ -26,11 +26,11 @@ jobs:
         with:
           context: .
           target: backend
-          tags: PluralKit/statuspage_backend:latest
+          tags: ghcr.io/PluralKit/statuspage_backend:latest
           push: true
       - uses: docker/build-push-action@v2
         with:
           context: .
           target: frontend
-          tags: PluralKit/statuspage_frontend:latest
+          tags: ghcr.io/PluralKit/statuspage_frontend:latest
           push: true
