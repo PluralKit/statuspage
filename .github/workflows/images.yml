@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io/pluralkit
+  REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
@@ -35,7 +35,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}_frontend
           tags: |
             type=ref,event=branch
-            type=sha,format=long
+            type=sha,prefix=,format=long
             
       - uses: docker/build-push-action@v6.18.0
         with:
@@ -51,7 +51,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}_backend
           tags: |
             type=ref,event=branch
-            type=sha,format=long
+            type=sha,prefix=,format=long
             
       - uses: docker/build-push-action@v6.18.0
         with:
