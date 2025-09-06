@@ -2,14 +2,12 @@
 export function dateAgo(date: number) {
   if (date == 0) return "never";
   // difference in milliseconds
-  const msDifference = (date * 1000) - Date.now();
+  const msDifference = date - Date.now();
   // convert to seconds
   const diffSeconds = msDifference / 1000;
   const diffMinutes = diffSeconds / 60;
   const diffHours = diffMinutes / 60;
   const diffDays = diffHours / 24;
-
-  
 
   const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 
