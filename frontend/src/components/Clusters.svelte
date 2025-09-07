@@ -161,9 +161,9 @@
                     <div class="tooltip-content flex flex-col">
                         <span>up: {shard.up}</span>
                         <span>latency: {shard.latency}</span>
-                        <span>last connection: {dateAgo(shard.last_connection)}</span>
-                        <span>last heartbeat: {dateAgo(shard.last_heartbeat)}</span>
-                        <span>last reconnect: {dateAgo(shard.last_reconnect)}</span>
+                        <span>last connection: {dateAgo(shard.last_connection * 1000)}</span>
+                        <span>last heartbeat: {dateAgo(shard.last_heartbeat * 1000)}</span>
+                        <span>last reconnect: {dateAgo(shard.last_reconnect * 1000)}</span>
                     </div>
                 </div>
                 {/each}

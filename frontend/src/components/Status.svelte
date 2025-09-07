@@ -141,7 +141,7 @@
                                 <ul class="timeline timeline-vertical timeline-compact gap-4">
                                     {#each incident.updates as update}
                                     <li>
-                                        <div class="timeline-start">{dateAgo(update.timestamp)}</div>
+                                        <div class="timeline-start">{dateAgo(update.timestamp.getTime())}</div>
                                         <div class="timeline-end timeline-box flex flex-col gap-4 p-4 text-left text-sm">
                                             {#await marked(update.text)}
                                                 <p>loading...</p>
@@ -161,7 +161,7 @@
                             </div>
                             {/if}
                             <div class="justify-end ml-auto">
-                                <span class="text-sm italic">Started {dateAgo(incident.timestamp)} | {incident.id}</span>
+                                <span class="text-sm italic">Started {dateAgo(incident.timestamp.getTime())} | {incident.id}</span>
                             </div>
                         </div>
                     </div>
