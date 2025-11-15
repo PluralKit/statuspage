@@ -1,13 +1,10 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
     import { slide } from 'svelte/transition';
-    
     import { dateAgo, getShardID } from '$lib/util';
     import { type Cluster, type ClustersWrapper, type Shard } from '$lib/types';
 
-    let clustersInfo: ClustersWrapper;
-    let error: any = undefined;
-
+    let {clustersInfo, error}: {clustersInfo?: ClustersWrapper; error: any} = $props();
+    
     //kinda a janky fix for closing, but whatevs it'll work for now
     function clickHandler(event: MouseEvent){
         const clicked = event.target as HTMLElement;
@@ -18,28 +15,8 @@
         }
     }
 
-    onMount(async () => {
-        try {
-            const response = await fetch("/api/v1/clusters");
-            const data = await response.json() as ClustersWrapper;
-            clustersInfo = data
-            if (!clustersInfo.clusters) {
-                throw new Error("clusters is undefined")
-            }
-            clustersInfo.clusters.forEach((cluster, i) => {
-                if (!cluster.up) cluster.status = "down";
-                else if (cluster.avg_latency < 200) cluster.status = "healthy";
-                else if (cluster.avg_latency < 400) cluster.status = "degraded";
-                else cluster.status = "severe";
-                cluster.id = i
-            });
-        } catch (e) {
-            error = e;
-            console.error(e);
-        }
-    });
-
     async function getShards(clusterID: number) {
+        if (!clustersInfo) return;
         try {
             if (!clustersInfo.clusters) return
             let cluster = clustersInfo.clusters[clusterID]
@@ -60,13 +37,15 @@
         }
     }
 
-    let findClusterInput = "";
-    let findClusterErr = "";
-    let shownCluster: Cluster | undefined;
-    let shownShardID: number;
-    let findCluster = false;
+    let findClusterInput = $state("");
+    let findClusterErr = $state("");
+    let shownCluster: Cluster | undefined = $state();
+    let shownShardID = $state();
+    let findCluster = $state(false);
 
     async function clusterInfoHandler() {
+        if (!clustersInfo) return;
+        if (findClusterInput.length < 17) return;
         if(findClusterInput == "") {
             findCluster = false;
             findClusterErr = "";
@@ -98,6 +77,7 @@
     }
 
     async function showClusterHandler(id: number) {
+        if (!clustersInfo) return;
         if(shownCluster && id === shownCluster.id) {
             shownCluster = undefined;
         } else if (clustersInfo.clusters){
@@ -136,7 +116,7 @@
             <div class="cluster-ctr flex flex-wrap flex-row py-6 justify-start">
                 {#if clustersInfo?.clusters}
                 {#each clustersInfo.clusters as cluster}
-                <button class="cluster aspect-square tooltip indicator {cluster.status}" on:click={()=>{showClusterHandler(cluster.id)}}>
+                <button class="cluster aspect-square tooltip indicator {cluster.status}" onclick={()=>{showClusterHandler(cluster.id)}}>
                     {#if cluster.shards_up < clustersInfo.max_concurrency}
                         <span class="indicator-item status status-error"></span>
                     {/if}
@@ -176,7 +156,7 @@
         <div role="region" aria-label="Cluster/Shard locator" class="flex flex-col">
             <h2 class="text-lg">Find My Shard/Cluster:</h2>
             <span class="text-sm pb-4">Enter a server ID or a message link to find the shard currently assigned to your server.</span>
-            <input type="text" aria-label="Server ID or Message Link Input" placeholder="Server ID or Message Link" class="input {findClusterErr != "" ? "input-error" : ""}" bind:value={findClusterInput} on:input={clusterInfoHandler} />
+            <input type="text" aria-label="Server ID or Message Link Input" placeholder="Server ID or Message Link" class="input {findClusterErr != "" ? "input-error" : ""}" bind:value={findClusterInput} oninput={clusterInfoHandler} />
             {#if findClusterErr != ""}
                 <span class="text-sm text-error">{findClusterErr}</span>
             {/if}

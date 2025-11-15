@@ -1,18 +1,36 @@
 FROM alpine:latest AS build
 
-RUN apk add nodejs npm go git make
+RUN apk add go make
 
 COPY backend/ /build/backend/
-COPY frontend/ /build/frontend/
 COPY Makefile /build/
-COPY .git/ /build/.git
 
 WORKDIR /build
-RUN make
+RUN make backend
 
-FROM caddy:2.10 AS caddy
-COPY Caddyfile /etc/caddy/Caddyfile
-COPY --from=build /build/build/srv /srv
+
+FROM node:20-alpine AS build-sveltekit
+WORKDIR /app
+
+COPY frontend/package*.json ./
+RUN npm install
+
+COPY frontend .
+RUN npm run build
+
+
+FROM node:20-alpine AS frontend
+WORKDIR /app
+
+COPY --from=build-sveltekit /app/package*.json ./
+RUN npm install --omit=dev
+
+COPY --from=build-sveltekit /app/build ./build
+COPY --from=build-sveltekit /app/static ./static
+EXPOSE 3000
+ENV NODE_ENV=production
+CMD ["node", "./build/index.js"]
+
 
 FROM alpine:latest AS backend
 COPY --from=build /build/build /app/

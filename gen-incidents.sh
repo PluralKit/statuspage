@@ -1,11 +1,10 @@
 #!/bin/sh
 
-url=http://localhost:80
-
+url=http://localhost:5000
 
 incidentA=$(cat << END
 {
-    "status": "identified",
+    "status": "investigating",
     "impact": "minor",
     "name": "Avatars not loading",
     "description": "Some avatars are not loading."
@@ -14,13 +13,15 @@ END
 )
 incidentA_updateA=$(cat << END
 {
-    "text": "uhhhh there's a fox in the servers biting on wires???"
+    "text": "uhhhh there's a fox in the servers biting on wires???",
+    "status": "identified"
 }
 END
 )
 incidentA_updateB=$(cat << END
 {
-    "text": "we have lured the fox out with a sandwich! working on repairing the wires now"
+    "text": "we have lured the fox out with a sandwich! working on repairing the wires now",
+    "status": "identified"
 }
 END
 )

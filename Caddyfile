@@ -1,7 +1,7 @@
 # example caddyfile
-:80 {
-    file_server /* {
-		root /srv
+:5080 {
+	reverse_proxy /* {
+		to frontend:3000
 	}
 	reverse_proxy /api/* {
 		to backend:8080

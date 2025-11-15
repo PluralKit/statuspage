@@ -17,6 +17,4 @@ clean:
 .PHONY: dev
 dev: backend
 	export $(xargs < .env)
-	rm -rf build/srv/* && mkdir -p build build/srv
-	cd frontend && npm install && npm run build && mv -f build/* ../build/srv
-	cd build && pluralkit__status__run_dev=true ./status
+	cd build && pluralkit__status__addr="0.0.0.0:5000" ./status & cd frontend && BACKEND_URL="http://localhost:5000" npm run dev

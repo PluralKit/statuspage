@@ -34,6 +34,7 @@ export interface IncidentUpdate {
   id: string;
   text: string;
   timestamp: Date;
+  status?: string;
 }
 
 export interface Incident {

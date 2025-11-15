@@ -12,16 +12,22 @@ services:
       - pluralkit__status__db_location=file:/app/data/status.db
     restart: unless-stopped
 
-  caddy:
+  frontend:
     build:
       context: .
-      target: caddy
+      target: frontend
+    environment:
+      - BACKEND_URL=http://backend:8080
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:latest
+    volumes:
+    - ./Caddyfile:/etc/caddy/Caddyfile
     cap_add:
       - NET_ADMIN
     ports:
-    - "80:80"
-    - "443:443"
-    - "443:443/udp"
+    - "5080:5080"
 
 volumes:
   data:

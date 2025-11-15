@@ -5,6 +5,12 @@ import { defineConfig } from "vite";
 export default defineConfig({
   server: {
     allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
   },
   plugins: [tailwindcss(), sveltekit()],
 });
