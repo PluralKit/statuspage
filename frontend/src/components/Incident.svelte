@@ -1,13 +1,14 @@
 <script lang="ts">
-    import { dateAgo } from '$lib/util';
+    import { dateAgo, discordTimestamp } from '$lib/util';
     import type { Incident } from '$src/lib/types';
     import { marked } from 'marked';
     import { Render } from 'svelte-purify/browser-only';
-    import { slide } from 'svelte/transition';
 
     export let incident: Incident, full = false;
     let impact_class = incident?.impact == "none" ? "badge-neutral" : incident?.impact == "minor" ? "badge-warning" : "badge-error";
     let incident_class = incident?.updates && incident?.updates.length > 0 ? "incident" : "";
+
+    marked.use({ extensions: [discordTimestamp] });
 </script>
 {#if incident != undefined}
 {#if full}
