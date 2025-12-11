@@ -13,23 +13,23 @@
 {#if incident != undefined}
 {#if full}
 <a class="card bg-base-200 w-full shadow-sm {incident_class}" href={!full ? `/i/${incident.id}` : undefined}>
-    <div class="card-body w-full items-center">
+    <div class="card-body m-auto w-3/4 items-center">
         <h2 class="card-title py-4">
             <div class="flex flex-col w-full items-center">
                 <span class="text-2xl">{incident.name} {#if incident.impact != "none"}<div class="badge {impact_class}">{incident.impact}</div>{/if}</span>
                 <span class="text-sm italic">{dateAgo(incident.timestamp.getTime())}</span>
             </div>
         </h2>
-        <span class=" flex flex-col gap-4 text-left text-base">
-            {#await marked(incident.description)}
+        <span class=" flex flex-col gap-4 text-left text-base w-full">
+            {#await marked(incident.description, { breaks: true })}
                 <p>loading...</p>
             {:then html}
                 <Render html={html} />
             {/await}
         </span>
+        <div class="divider"></div>
         {#if incident.updates && incident.updates.length > 0}
-            <div>
-                <div class="divider"></div>
+            <div class="w-full">
                 <ul class="timeline timeline-vertical timeline-compact gap-6 py-2">
                     {#each incident.updates.sort((a, b) => a.timestamp.getTime() + b.timestamp.getTime()) as update}
                     <li>
@@ -37,7 +37,7 @@
                             {#if update.status}
                                 <span class="update-status font-bold">{String(update.status).charAt(0).toUpperCase() + String(update.status).slice(1)}</span>
                             {/if}
-                            {#await marked(update.text)}
+                            {#await marked(update.text, { breaks: true })}
                                 <p>loading...</p>
                             {:then html}
                                 <Render html={html} />
@@ -65,7 +65,7 @@
             </div>
         </h2>
         <span class=" flex flex-col gap-4 text-left text-sm">
-            {#await marked(incident.description)}
+            {#await marked(incident.description, { breaks: true })}
                 <p>loading...</p>
             {:then html}
                 <Render html={html} />
@@ -86,7 +86,7 @@
                             {#if update.status}
                                 <span class="update-status font-bold">{String(update.status).charAt(0).toUpperCase() + String(update.status).slice(1)}</span>
                             {/if}
-                            {#await marked(update.text)}
+                            {#await marked(update.text, { breaks: true })}
                                 <p>loading...</p>
                             {:then html}
                                 <Render html={html} />
