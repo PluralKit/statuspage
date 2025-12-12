@@ -7,10 +7,12 @@ import (
 	"net/http"
 	"pluralkit/status/db"
 	"pluralkit/status/util"
+	"slices"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -64,6 +66,7 @@ type API struct {
 	Config     util.Config
 	Logger     *slog.Logger
 	Database   *db.DB
+	Sessions   *scs.SessionManager
 	httpClient http.Client
 
 	clustersCache  ClustersInfo
@@ -73,10 +76,19 @@ type API struct {
 
 func NewAPI(config util.Config, logger *slog.Logger, database *db.DB) *API {
 	moduleLogger := logger.With(slog.String("module", "API"))
+
+	sessionManager := scs.New()
+	sessionManager.Lifetime = 24 * time.Hour
+	sessionManager.Cookie.Name = "session_id"
+	sessionManager.Cookie.HttpOnly = true
+	sessionManager.Cookie.Secure = !config.RunDev
+	sessionManager.Cookie.SameSite = http.SameSiteLaxMode
+
 	return &API{
 		Config:     config,
 		Logger:     moduleLogger,
 		Database:   database,
+		Sessions:   sessionManager,
 		httpClient: http.Client{Timeout: 10 * time.Second},
 		clustersCache: ClustersInfo{
 			Clusters:       make([]*Cluster, 0),
@@ -85,9 +97,7 @@ func NewAPI(config util.Config, logger *slog.Logger, database *db.DB) *API {
 	}
 }
 
-// this isn't that secure, and it's not supposed to be.
-// backend should be behind a reverse proxy with only local/certain IPs allowed
-func BasicTokenAuth(token string) func(http.Handler) http.Handler {
+func (a *API) Auth() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
@@ -101,16 +111,55 @@ func BasicTokenAuth(token string) func(http.Handler) http.Handler {
 				return
 			}
 
-			if split[1] == token {
+			if split[1] == a.Config.AuthToken {
 				next.ServeHTTP(w, r)
-			} else {
-				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+				return
 			}
+
+			val := a.Sessions.Get(r.Context(), "user_session")
+			user, ok := val.(DiscordUser)
+			if !ok {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			if user.ID == "" || !slices.Contains(a.Config.AuthorizedUsers, user.ID) {
+				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+				return
+			}
+
+			next.ServeHTTP(w, r)
 		})
 	}
 }
 
+func (a *API) Me(w http.ResponseWriter, r *http.Request) {
+	val := a.Sessions.Get(r.Context(), "user_session")
+	user, ok := val.(DiscordUser)
+
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var avatarURL string
+	if user.Avatar != "" {
+		avatarURL = "https://cdn.discordapp.com/avatars/" + user.ID + "/" + user.Avatar + ".png"
+	} else {
+		avatarURL = "https://cdn.discordapp.com/embed/avatars/0.png"
+	}
+
+	response := map[string]string{
+		"id":       user.ID,
+		"username": user.Username,
+		"avatar":   avatarURL,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
 func (a *API) SetupRoutes(router *chi.Mux) {
+	a.oauthInit()
 	router.Route("/api/v1", func(r chi.Router) {
 
 		r.Get("/status", a.GetStatus)
@@ -131,12 +180,15 @@ func (a *API) SetupRoutes(router *chi.Mux) {
 			r.Get("/", a.GetUpdate)
 		})
 
+		r.Route("/auth/discord", func(r chi.Router) {
+			r.Get("/login", a.oauthDiscordLogin)
+			r.Get("/callback", a.oauthDiscordCallback)
+			r.Get("/logout", a.logout)
+		})
+		r.Get("/me", a.Me)
+
 		r.Route("/admin", func(r chi.Router) {
-			if a.Config.AuthToken != "" {
-				r.Use(BasicTokenAuth(a.Config.AuthToken))
-			} else {
-				a.Logger.Warn("auth token is not set! admin endpoint auth disabled!")
-			}
+			r.Use(a.Auth())
 
 			r.Route("/incidents", func(r chi.Router) {
 				r.Post("/create", a.CreateIncident)

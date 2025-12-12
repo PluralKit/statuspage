@@ -98,6 +98,7 @@ func main() {
 	r.Use(middleware.Timeout(30 * time.Second))
 
 	apiInstance := api.NewAPI(cfg, logger, db)
+	r.Use(apiInstance.Sessions.LoadAndSave)
 	apiInstance.SetupRoutes(r)
 
 	if cfg.RunDev {
