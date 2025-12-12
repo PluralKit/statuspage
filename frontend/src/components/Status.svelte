@@ -31,7 +31,7 @@
 </script>
 
 <div class="card">
-    <div role="alert" class="alert {statusClass} flex flex-col items-start gap-1 h-28">
+    <div role="alert" class="alert {statusClass} flex flex-col items-start gap-1 h-1/8">
         {#if status}
         <span class="text-lg font-bold">{statusText}</span>
         <span class="text-md">{statusInfoText}</span>

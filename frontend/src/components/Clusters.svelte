@@ -172,6 +172,11 @@
         --cluster-item-size: 4.2rem;
         --cluster-gap-size: calc(2*var(--spacing));
     }
+    @media (max-width: 768px) {
+        :root {
+            --cluster-item-size: 3.8rem;
+        }
+    }
     .cluster
     {
         width: var(--cluster-item-size);

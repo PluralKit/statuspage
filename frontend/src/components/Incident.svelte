@@ -13,10 +13,10 @@
 {#if incident != undefined}
 {#if full}
 <a class="card bg-base-200 w-full shadow-sm {incident_class}" href={!full ? `/i/${incident.id}` : undefined}>
-    <div class="card-body m-auto w-3/4 items-center">
+    <div class="card-body m-auto lg:w-3/4 w-full items-center">
         <h2 class="card-title py-4">
             <div class="flex flex-col w-full items-center">
-                <span class="text-2xl">{incident.name} {#if incident.impact != "none"}<div class="badge {impact_class}">{incident.impact}</div>{/if}</span>
+                <span class="lg:text-2xl text-xl">{incident.name} {#if incident.impact != "none"}<div class="badge {impact_class}">{incident.impact}</div>{/if}</span>
                 <span class="text-sm italic">{dateAgo(incident.timestamp.getTime())}</span>
             </div>
         </h2>
