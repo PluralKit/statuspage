@@ -101,17 +101,8 @@ func (a *API) Auth() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
-			if authHeader == "" {
-				http.Error(w, "token not provided", http.StatusUnauthorized)
-				return
-			}
 			split := strings.Split(authHeader, " ")
-			if len(split) != 2 || strings.ToLower(split[0]) != "bearer" {
-				http.Error(w, "invalid header format", http.StatusUnauthorized)
-				return
-			}
-
-			if split[1] == a.Config.AuthToken {
+			if authHeader != "" && split[1] == a.Config.AuthToken {
 				next.ServeHTTP(w, r)
 				return
 			}
